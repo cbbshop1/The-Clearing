@@ -36,11 +36,14 @@ export default function Sidebar({
     }
   };
 
-  const formatTimeAgo = (date: Date | null) => {
+  const formatTimeAgo = (date: Date | string | null) => {
     if (!date) return "Unknown";
     
+    const dateObj = date instanceof Date ? date : new Date(date);
+    if (isNaN(dateObj.getTime())) return "Unknown";
+    
     const now = new Date();
-    const diff = now.getTime() - date.getTime();
+    const diff = now.getTime() - dateObj.getTime();
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const days = Math.floor(hours / 24);
     

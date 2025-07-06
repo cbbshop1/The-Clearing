@@ -10,19 +10,25 @@ export function useWebSocket({ onMessage, onError, onClose }: UseWebSocketProps)
   const [socket, setSocket] = useState<WebSocket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
+  const lastConnectAttempt = useRef<number>(0);
   const onMessageRef = useRef(onMessage);
   const onErrorRef = useRef(onError);
   const onCloseRef = useRef(onClose);
 
   // Update refs when callbacks change
-  useEffect(() => {
-    onMessageRef.current = onMessage;
-    onErrorRef.current = onError;
-    onCloseRef.current = onClose;
-  }, [onMessage, onError, onClose]);
+  onMessageRef.current = onMessage;
+  onErrorRef.current = onError;
+  onCloseRef.current = onClose;
 
   useEffect(() => {
     const connect = () => {
+      const now = Date.now();
+      // Prevent connection attempts more than once per second
+      if (now - lastConnectAttempt.current < 1000) {
+        return;
+      }
+      lastConnectAttempt.current = now;
+      
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
       const wsUrl = `${protocol}//${window.location.host}/ws`;
       
