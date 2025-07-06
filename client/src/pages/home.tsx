@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
-import ChatInterface from "@/components/ChatInterface";
+import SimpleChat from "@/components/SimpleChat";
 import Sidebar from "@/components/Sidebar";
 import ModelPanel from "@/components/ModelPanel";
 import EmojiLexicon from "@/components/EmojiLexicon";
@@ -18,13 +18,17 @@ export default function Home() {
 
   // Get user sessions (using moderator ID for demo)
   const { data: sessions = [] } = useQuery({
-    queryKey: ['/api/sessions'],
+    queryKey: ['/api/sessions', moderator?.id],
     queryFn: async () => {
-      const response = await fetch(`/api/sessions?userId=${moderator?.id}`);
+      if (!moderator?.id) {
+        throw new Error('No moderator ID available');
+      }
+      const response = await fetch(`/api/sessions?userId=${moderator.id}`);
       if (!response.ok) throw new Error('Failed to fetch sessions');
       return response.json();
     },
     enabled: !!moderator?.id,
+    retry: false, // Disable retries to prevent excessive requests
   });
 
   // Get active AI models
@@ -127,12 +131,7 @@ export default function Home() {
         
         {/* Main Chat Area - Takes up most space */}
         <div className="flex-1 min-w-0">
-          <ChatInterface
-            ref={chatInterfaceRef}
-            sessionId={selectedSessionId}
-            userId={moderator?.id}
-            onOpenEmojiLexicon={() => setIsEmojiLexiconOpen(true)}
-          />
+          <SimpleChat />
         </div>
         
         {/* Right Panel - Slimmer */}
