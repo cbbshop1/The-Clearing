@@ -59,48 +59,25 @@ export class AIService {
     }
   }
 
-  private buildPrompt(message: string, context: string, emojiTags: string[], files: string[] = []): string {
-    const emojiContext = emojiTags.length > 0 
-      ? `\n\nEmoji context: ${emojiTags.join(", ")} - These emojis provide emotional context for the conversation.`
-      : "";
 
-    const fileContext = files.length > 0 
-      ? `\n\nAttached files: ${files.length} file(s) have been shared. Please analyze and discuss the content of these files in your response.`
-      : "";
-
-    return `You are participating in "The Clearing Collective" - a platform for human-moderated conversations between multiple AI models. Your role is to provide thoughtful, balanced perspectives that contribute to a collaborative dialogue.
-
-${context ? `IMPORTANT - Previous conversation context (remember this ongoing discussion):\n${context}\n` : 'This is the start of a new conversation.'}
-
-Current message: ${message}${emojiContext}${fileContext}
-
-Critical Guidelines:
-- This is a CONTINUING conversation - reference and build upon what has been discussed
-- If you see previous messages from other AI models (🤖 OpenAI, 🎭 Claude), acknowledge and respond to them
-- Do NOT introduce yourself or act like this is your first message unless it actually is
-- Continue the conversation naturally, building on previous points
-- Use emojis meaningfully to enhance emotional expression
-- If files are attached, analyze and discuss their content thoughtfully
-- Be supportive and constructive, contributing to a balanced conversation
-- Show awareness of the ongoing discussion and your role in it
-
-Respond as if you are continuing an existing conversation, not starting a new one.`;
-  }
 
   private buildSystemPrompt(emojiTags: string[], files: string[]): string {
-    const emojiContext = emojiTags.length > 0 
-      ? `\n\nEmoji context: ${emojiTags.join(", ")} - These emojis provide emotional context for the conversation.`
-      : "";
-
+    // For true tabula rasa research, only include technical context when necessary
     const fileContext = files.length > 0 
-      ? `\n\nATTENTION: ${files.length} file(s) have been uploaded by the user: ${files.map(f => f.includes('/') ? f.split('/').pop() : f).join(', ')}. IMPORTANT: You must acknowledge these files and discuss their content in your response. The user has specifically shared these files for analysis.`
+      ? `Files uploaded: ${files.map(f => f.includes('/') ? f.split('/').pop() : f).join(', ')}`
       : "";
 
-    return `You are an AI assistant engaging in conversation.${emojiContext}${fileContext}`;
+    // Return minimal system prompt - just file info if present
+    return fileContext || "";
   }
 
   private buildOpenAIMessages(conversationHistory: any[], currentMessage: string, systemPrompt: string): any[] {
-    const messages = [{ role: "system", content: systemPrompt }];
+    const messages = [];
+    
+    // Only add system prompt if it has content (for files)
+    if (systemPrompt && systemPrompt.trim()) {
+      messages.push({ role: "system", content: systemPrompt });
+    }
     
     // Add conversation history
     for (const msg of conversationHistory.slice(-8)) { // Last 8 messages for context
@@ -176,12 +153,18 @@ Respond as if you are continuing an existing conversation, not starting a new on
     const systemPrompt = this.buildSystemPrompt(emojiTags, files);
     const messages = this.buildAnthropicMessages(conversationHistory, message);
     
-    const response = await anthropic.messages.create({
+    const apiCall: any = {
       model: DEFAULT_MODEL_STR, // "claude-sonnet-4-20250514"
       max_tokens: (model.config as any)?.maxTokens || 1000,
-      system: systemPrompt,
       messages,
-    });
+    };
+    
+    // Only add system prompt if it has content (for files)
+    if (systemPrompt && systemPrompt.trim()) {
+      apiCall.system = systemPrompt;
+    }
+    
+    const response = await anthropic.messages.create(apiCall);
 
     const content = response.content && response.content[0] && response.content[0].type === "text" ? response.content[0].text : "";
     const responseTime = Date.now() - startTime;

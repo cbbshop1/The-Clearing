@@ -125,6 +125,8 @@ This is a full-stack web application that provides a platform for human-moderate
 - July 06, 2025: Added explicit file information to user messages and AI system prompts for better file interaction
 - July 06, 2025: Removed preset context prompts to enable tabula rasa research - AI models now start with blank slate
 - July 06, 2025: Simplified system prompts to avoid predefining roles or platform knowledge for research purposes
+- July 06, 2025: Completely removed system prompts except for file uploads - true tabula rasa implementation
+- July 06, 2025: Eliminated old buildPrompt method that contained "Critical Guidelines" and platform context
 
 ## User Preferences
 
