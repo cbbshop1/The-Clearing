@@ -185,42 +185,46 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
       {/* Chat Messages */}
       <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
         <div className="space-y-6">
-          {messages.map((message) => {
+          {messages.map((message, index) => {
             // Group AI responses that follow each other
             if (message.type === 'ai_openai' || message.type === 'ai_claude') {
-              const nextMessage = messages[messages.indexOf(message) + 1];
+              const nextMessage = messages[index + 1];
               const isGroupedWithNext = nextMessage && 
                 (nextMessage.type === 'ai_openai' || nextMessage.type === 'ai_claude') &&
                 nextMessage.type !== message.type;
               
-              const prevMessage = messages[messages.indexOf(message) - 1];
+              const prevMessage = messages[index - 1];
               const isGroupedWithPrev = prevMessage && 
                 (prevMessage.type === 'ai_openai' || prevMessage.type === 'ai_claude') &&
                 prevMessage.type !== message.type;
                 
               if (isGroupedWithNext) {
-                // Show side-by-side layout
+                // Show side-by-side layout with independent scroll areas
                 return (
                   <div key={`${message.id}-${nextMessage.id}`} className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <div className="text-xs font-medium text-muted-foreground mb-2">
-                        {message.type === 'ai_openai' ? 'OpenAI GPT-4o' : 'Claude'}
+                      <div className="text-xs font-medium text-muted-foreground mb-2 sticky top-0 bg-background z-10 pb-1 border-b">
+                        {message.type === 'ai_openai' ? '🤖 OpenAI GPT-4o' : '🎭 Claude'}
                       </div>
-                      <MessageBubble 
-                        message={message} 
-                        onForward={handleForwardMessage} 
-                        isForwarded={forwardedMessages.has(message.id)}
-                      />
+                      <div className="max-h-80 overflow-y-auto pr-2 space-y-2 animate-in slide-in-from-left-3 duration-500">
+                        <MessageBubble 
+                          message={message} 
+                          onForward={handleForwardMessage} 
+                          isForwarded={forwardedMessages.has(message.id)}
+                        />
+                      </div>
                     </div>
                     <div className="space-y-2">
-                      <div className="text-xs font-medium text-muted-foreground mb-2">
-                        {nextMessage.type === 'ai_openai' ? 'OpenAI GPT-4o' : 'Claude'}
+                      <div className="text-xs font-medium text-muted-foreground mb-2 sticky top-0 bg-background z-10 pb-1 border-b">
+                        {nextMessage.type === 'ai_openai' ? '🤖 OpenAI GPT-4o' : '🎭 Claude'}
                       </div>
-                      <MessageBubble 
-                        message={nextMessage} 
-                        onForward={handleForwardMessage} 
-                        isForwarded={forwardedMessages.has(nextMessage.id)}
-                      />
+                      <div className="max-h-80 overflow-y-auto pr-2 space-y-2 animate-in slide-in-from-right-3 duration-500">
+                        <MessageBubble 
+                          message={nextMessage} 
+                          onForward={handleForwardMessage} 
+                          isForwarded={forwardedMessages.has(nextMessage.id)}
+                        />
+                      </div>
                     </div>
                   </div>
                 );

@@ -105,6 +105,9 @@ This is a full-stack web application that provides a platform for human-moderate
 - July 06, 2025: Added functional emoji lexicon with chat input integration
 - July 06, 2025: Created side-by-side AI response layout for conversation comparison
 - July 06, 2025: Added forward button state tracking with visual feedback
+- July 06, 2025: Enhanced export functionality to generate downloadable markdown files
+- July 06, 2025: Added independent scrolling areas for side-by-side AI responses
+- July 06, 2025: Implemented smooth animations for message arrival
 
 ## User Preferences
 

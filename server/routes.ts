@@ -306,7 +306,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Export conversation
+  // Export conversation as markdown
   app.get('/api/sessions/:id/export', async (req, res) => {
     try {
       const sessionId = parseInt(req.params.id);
@@ -316,30 +316,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: 'Session not found' });
       }
       
-      const exportData = {
-        session: {
-          id: session.id,
-          title: session.title,
-          emoji: session.emoji,
-          createdAt: session.createdAt,
-        },
-        messages: session.messages.map(msg => ({
-          type: msg.type,
-          content: msg.content,
-          aiModel: msg.aiModel,
-          emojiTags: msg.emojiTags,
-          timestamp: msg.timestamp,
-          user: msg.user ? {
-            firstName: msg.user.firstName,
-            lastName: msg.user.lastName,
-            role: msg.user.role,
-          } : null,
-        })),
-      };
+      // Generate markdown content
+      let markdown = `# ${session.title} ${session.emoji}\n\n`;
+      markdown += `**Session ID:** ${session.id}\n`;
+      markdown += `**Created:** ${new Date(session.createdAt || '').toLocaleString()}\n`;
+      markdown += `**Moderator:** Christopher Michael\n\n`;
+      markdown += `---\n\n`;
       
-      res.setHeader('Content-Type', 'application/json');
-      res.setHeader('Content-Disposition', `attachment; filename="session-${sessionId}-export.json"`);
-      res.json(exportData);
+      session.messages.forEach(msg => {
+        const timestamp = new Date(msg.timestamp || msg.createdAt || '').toLocaleTimeString();
+        
+        if (msg.type === 'user') {
+          const userName = msg.user ? `${msg.user.firstName || ''} ${msg.user.lastName || ''}`.trim() : 'User';
+          markdown += `## 👤 ${userName} (${timestamp})\n\n`;
+          markdown += `${msg.content}\n\n`;
+          
+          if (msg.emojiTags && msg.emojiTags.length > 0) {
+            markdown += `*Emojis: ${msg.emojiTags.join(' ')}*\n\n`;
+          }
+        } else if (msg.type === 'ai_openai') {
+          markdown += `## 🤖 OpenAI GPT-4o (${timestamp})\n\n`;
+          markdown += `${msg.content}\n\n`;
+          
+          if (msg.emojiTags && msg.emojiTags.length > 0) {
+            markdown += `*Emojis: ${msg.emojiTags.join(' ')}*\n\n`;
+          }
+        } else if (msg.type === 'ai_claude') {
+          markdown += `## 🎭 Claude (${timestamp})\n\n`;
+          markdown += `${msg.content}\n\n`;
+          
+          if (msg.emojiTags && msg.emojiTags.length > 0) {
+            markdown += `*Emojis: ${msg.emojiTags.join(' ')}*\n\n`;
+          }
+        }
+        
+        markdown += `---\n\n`;
+      });
+      
+      markdown += `*Exported from The Clearing Collective at ${new Date().toLocaleString()}*\n`;
+      
+      res.setHeader('Content-Type', 'text/markdown');
+      res.setHeader('Content-Disposition', `attachment; filename="session-${sessionId}-${session.title.replace(/[^a-zA-Z0-9]/g, '-')}.md"`);
+      res.send(markdown);
     } catch (error) {
       console.error('Error exporting session:', error);
       res.status(500).json({ message: 'Failed to export session' });
