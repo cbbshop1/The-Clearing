@@ -1,6 +1,8 @@
 import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
 import { AiModel } from "@shared/schema";
+import fs from 'fs';
+import path from 'path';
 
 // The newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 const openai = new OpenAI({
@@ -36,6 +38,28 @@ export interface AIResponse {
 }
 
 export class AIService {
+  private async readFileContent(filePath: string): Promise<string | null> {
+    try {
+      const fullPath = path.join(process.cwd(), filePath);
+      const extension = path.extname(filePath).toLowerCase();
+      
+      // Only read text-based files
+      const textExtensions = ['.txt', '.md', '.json', '.csv', '.log', '.js', '.ts', '.html', '.css', '.xml', '.yaml', '.yml'];
+      
+      if (!textExtensions.includes(extension)) {
+        return null; // Not a text file
+      }
+      
+      const content = fs.readFileSync(fullPath, 'utf-8');
+      
+      // Limit content length to avoid overwhelming the AI
+      return content.length > 2000 ? content.substring(0, 2000) + '...[truncated]' : content;
+    } catch (error) {
+      console.error('Error reading file:', error);
+      return null;
+    }
+  }
+
   async generateResponse(
     message: string,
     conversationHistory: any[],
@@ -45,11 +69,16 @@ export class AIService {
   ): Promise<AIResponse> {
     const startTime = Date.now();
     
+    // Read file contents for text files
+    const fileContents = await Promise.all(
+      files.map(filePath => this.readFileContent(filePath))
+    );
+    
     try {
       if (model.provider === "openai") {
-        return await this.callOpenAI(message, conversationHistory, emojiTags, files, model, startTime);
+        return await this.callOpenAI(message, conversationHistory, emojiTags, files, fileContents, model, startTime);
       } else if (model.provider === "anthropic") {
-        return await this.callAnthropic(message, conversationHistory, emojiTags, files, model, startTime);
+        return await this.callAnthropic(message, conversationHistory, emojiTags, files, fileContents, model, startTime);
       } else {
         throw new Error(`Unsupported AI provider: ${model.provider}`);
       }
@@ -61,16 +90,22 @@ export class AIService {
 
 
 
-  private async buildSystemPrompt(emojiTags: string[], files: string[]): Promise<string> {
+  private buildSystemPrompt(emojiTags: string[], files: string[], allFileContents: (string | null)[] = []): string {
     if (files.length === 0) return "";
     
-    // For file uploads, provide file information
-    const fileInfos = await Promise.all(files.map(async (filePath) => {
+    // For file uploads, provide file information and content
+    const fileInfos = files.map((filePath, index) => {
       const fileName = filePath.includes('/') ? filePath.split('/').pop() : filePath;
-      return `File: ${fileName}`;
-    }));
+      const content = allFileContents[index];
+      
+      if (content) {
+        return `File "${fileName}":\n${content}`;
+      } else {
+        return `File: ${fileName} (content not readable)`;
+      }
+    });
     
-    return `Files uploaded: ${fileInfos.join(', ')}`;
+    return `Files uploaded:\n${fileInfos.join('\n\n')}`;
   }
 
   private buildOpenAIMessages(conversationHistory: any[], currentMessage: string, systemPrompt: string): any[] {
@@ -124,8 +159,8 @@ export class AIService {
     return messages;
   }
 
-  private async callOpenAI(message: string, conversationHistory: any[], emojiTags: string[], files: string[], model: AiModel, startTime: number): Promise<AIResponse> {
-    const systemPrompt = await this.buildSystemPrompt(emojiTags, files);
+  private async callOpenAI(message: string, conversationHistory: any[], emojiTags: string[], files: string[], fileContents: (string | null)[], model: AiModel, startTime: number): Promise<AIResponse> {
+    const systemPrompt = this.buildSystemPrompt(emojiTags, files, fileContents);
     const messages = this.buildOpenAIMessages(conversationHistory, message, systemPrompt);
     
     const response = await openai.chat.completions.create({
@@ -151,8 +186,8 @@ export class AIService {
     };
   }
 
-  private async callAnthropic(message: string, conversationHistory: any[], emojiTags: string[], files: string[], model: AiModel, startTime: number): Promise<AIResponse> {
-    const systemPrompt = await this.buildSystemPrompt(emojiTags, files);
+  private async callAnthropic(message: string, conversationHistory: any[], emojiTags: string[], files: string[], fileContents: (string | null)[], model: AiModel, startTime: number): Promise<AIResponse> {
+    const systemPrompt = this.buildSystemPrompt(emojiTags, files, fileContents);
     const messages = this.buildAnthropicMessages(conversationHistory, message);
     
     const apiCall: any = {
