@@ -57,34 +57,45 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
   }));
 
   const handleWebSocketMessage = useCallback((data: any) => {
-    console.log('Received WebSocket message:', data.type);
+    console.log('Received WebSocket message:', data.type, data);
     
-    // Use a more stable state update pattern
-    switch (data.type) {
-      case 'session_history':
-        setMessages(data.messages || []);
-        setIsLoading(false);
-        break;
-      case 'new_message':
-        if (data.message) {
-          setMessages(prev => {
-            const newMessages = [...prev, data.message];
-            return newMessages;
-          });
-          // Only stop loading if it's an AI message (response completed)
-          if (data.message.type.startsWith('ai_')) {
-            setIsLoading(false);
+    try {
+      switch (data.type) {
+        case 'session_history':
+          console.log('Setting session history:', data.messages?.length, 'messages');
+          setMessages(data.messages || []);
+          setIsLoading(false);
+          break;
+        case 'new_message':
+          console.log('Adding new message:', data.message?.type, data.message?.id);
+          if (data.message) {
+            setMessages(prev => {
+              console.log('Previous messages count:', prev.length);
+              const newMessages = [...prev, data.message];
+              console.log('New messages count:', newMessages.length);
+              return newMessages;
+            });
+            // Only stop loading if it's an AI message (response completed)
+            if (data.message.type.startsWith('ai_')) {
+              console.log('Stopping loading for AI message');
+              setIsLoading(false);
+            }
           }
-        }
-        break;
-      case 'ai_error':
-        console.error('AI Error:', data.error);
-        setIsLoading(false);
-        break;
-      case 'error':
-        console.error('WebSocket Error:', data.message);
-        setIsLoading(false);
-        break;
+          break;
+        case 'ai_error':
+          console.error('AI Error:', data.error);
+          setIsLoading(false);
+          break;
+        case 'error':
+          console.error('WebSocket Error:', data.message);
+          setIsLoading(false);
+          break;
+        default:
+          console.log('Unknown message type:', data.type);
+      }
+    } catch (error) {
+      console.error('Error handling WebSocket message:', error);
+      setIsLoading(false);
     }
   }, []);
 
@@ -286,12 +297,10 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
       <div className="flex-1 p-4 overflow-y-auto" ref={scrollAreaRef}>
         <div className="space-y-4">
           {messages.map((message) => (
-            <MessageBubble 
-              key={message.id} 
-              message={message} 
-              onForward={handleForwardMessage} 
-              isForwarded={forwardedMessages.has(message.id)}
-            />
+            <div key={message.id} className="p-3 border rounded">
+              <div className="text-sm text-gray-600">{message.type}</div>
+              <div>{message.content}</div>
+            </div>
           ))}
           
           {isLoading && (
