@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
-import SimpleStableChat from "@/components/SimpleStableChat";
+import ChatInterface from "@/components/ChatInterface";
 import Sidebar from "@/components/Sidebar";
 import ModelPanel from "@/components/ModelPanel";
 import EmojiLexicon from "@/components/EmojiLexicon";
@@ -131,7 +131,18 @@ export default function Home() {
         
         {/* Main Chat Area - Takes up most space */}
         <div className="flex-1 min-w-0">
-          <SimpleStableChat />
+          {moderatorLoading ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-gray-500">Loading...</div>
+            </div>
+          ) : (
+            <ChatInterface
+              ref={chatInterfaceRef}
+              sessionId={selectedSessionId}
+              userId={moderator?.id}
+              onOpenEmojiLexicon={() => setIsEmojiLexiconOpen(true)}
+            />
+          )}
         </div>
         
         {/* Right Panel - Slimmer */}
