@@ -96,19 +96,7 @@ Respond as if you are continuing an existing conversation, not starting a new on
       ? `\n\nATTENTION: ${files.length} file(s) have been uploaded by the user: ${files.map(f => f.includes('/') ? f.split('/').pop() : f).join(', ')}. IMPORTANT: You must acknowledge these files and discuss their content in your response. The user has specifically shared these files for analysis.`
       : "";
 
-    return `You are participating in "The Clearing Collective" - a platform for human-moderated conversations between multiple AI models. Your role is to provide thoughtful, balanced perspectives that contribute to a collaborative dialogue.
-
-Critical Guidelines:
-- This is a CONTINUING conversation - reference and build upon what has been discussed
-- If you see previous messages from other AI models (🤖 OpenAI, 🎭 Claude), acknowledge and respond to them
-- Do NOT introduce yourself or act like this is your first message unless it actually is
-- Continue the conversation naturally, building on previous points
-- Use emojis meaningfully to enhance emotional expression
-- If files are attached, analyze and discuss their content thoughtfully
-- Be supportive and constructive, contributing to a balanced conversation
-- Show awareness of the ongoing discussion and your role in it
-
-Respond as if you are continuing an existing conversation, not starting a new one.${emojiContext}${fileContext}`;
+    return `You are an AI assistant engaging in conversation.${emojiContext}${fileContext}`;
   }
 
   private buildOpenAIMessages(conversationHistory: any[], currentMessage: string, systemPrompt: string): any[] {
@@ -121,7 +109,7 @@ Respond as if you are continuing an existing conversation, not starting a new on
       } else if (msg.type === 'ai_openai' && msg.content && msg.content.trim()) {
         messages.push({ role: "assistant", content: msg.content });
       } else if (msg.type === 'ai_claude' && msg.content && msg.content.trim()) {
-        messages.push({ role: "user", content: `Claude AI responded: ${msg.content}` });
+        messages.push({ role: "user", content: `Another AI responded: ${msg.content}` });
       }
     }
     
@@ -143,7 +131,7 @@ Respond as if you are continuing an existing conversation, not starting a new on
       } else if (msg.type === 'ai_claude' && msg.content && msg.content.trim()) {
         messages.push({ role: "assistant", content: msg.content });
       } else if (msg.type === 'ai_openai' && msg.content && msg.content.trim()) {
-        messages.push({ role: "user", content: `OpenAI responded: ${msg.content}` });
+        messages.push({ role: "user", content: `Another AI responded: ${msg.content}` });
       }
     }
     

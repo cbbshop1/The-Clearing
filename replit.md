@@ -123,6 +123,8 @@ This is a full-stack web application that provides a platform for human-moderate
 - July 06, 2025: Fixed Anthropic API error with empty message validation and improved response parsing
 - July 06, 2025: Enhanced file upload recognition - AI models now properly acknowledge and discuss uploaded files
 - July 06, 2025: Added explicit file information to user messages and AI system prompts for better file interaction
+- July 06, 2025: Removed preset context prompts to enable tabula rasa research - AI models now start with blank slate
+- July 06, 2025: Simplified system prompts to avoid predefining roles or platform knowledge for research purposes
 
 ## User Preferences
 
