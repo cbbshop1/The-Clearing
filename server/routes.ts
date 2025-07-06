@@ -129,12 +129,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             model
           );
 
-          // Create AI message
+          // Create AI message with specific type based on provider
+          const messageType = model.provider === 'openai' ? 'ai_openai' : 'ai_claude';
           const aiMessage = await storage.createMessage({
             sessionId,
             userId: null,
             content: aiResponse.content,
-            type: 'ai',
+            type: messageType,
             aiModel: model.name,
             emojiTags: aiResponse.emojiTags,
             metadata: aiResponse.metadata,
