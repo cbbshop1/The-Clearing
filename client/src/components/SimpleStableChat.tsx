@@ -7,24 +7,49 @@ export default function SimpleStableChat() {
   const [inputValue, setInputValue] = useState("");
   const [isConnected, setIsConnected] = useState(false);
   const [socket, setSocket] = useState<WebSocket | null>(null);
+  const [currentSessionId, setCurrentSessionId] = useState<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Watch for session changes in localStorage or URL
+  useEffect(() => {
+    const checkForActiveSession = () => {
+      // Try to get session from URL or localStorage
+      const urlParams = new URLSearchParams(window.location.search);
+      const sessionParam = urlParams.get('session');
+      if (sessionParam) {
+        const sessionId = parseInt(sessionParam);
+        if (sessionId !== currentSessionId) {
+          setCurrentSessionId(sessionId);
+        }
+      } else if (!currentSessionId) {
+        // Default to session 1 if no session specified
+        setCurrentSessionId(1);
+      }
+    };
+
+    checkForActiveSession();
+    const interval = setInterval(checkForActiveSession, 1000);
+    return () => clearInterval(interval);
+  }, [currentSessionId]);
 
   // Single, stable WebSocket connection
   useEffect(() => {
+    if (!currentSessionId) return;
+
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const wsUrl = `${protocol}//${window.location.host}/ws`;
     
     const newSocket = new WebSocket(wsUrl);
     
     newSocket.onopen = () => {
-      console.log('Connected');
+      console.log('Connected to session', currentSessionId);
       setIsConnected(true);
       setSocket(newSocket);
       
-      // Join session immediately
+      // Join the current session
       newSocket.send(JSON.stringify({
         type: 'join_session',
-        sessionId: 1,
+        sessionId: currentSessionId,
         userId: 1,
       }));
     };
@@ -35,13 +60,19 @@ export default function SimpleStableChat() {
         console.log('Message received:', data.type);
         
         if (data.type === 'session_history') {
+          console.log('Loading session history:', data.messages?.length || 0, 'messages');
           setMessages(data.messages || []);
         } else if (data.type === 'new_message') {
+          console.log('New message from:', data.message?.type);
           setMessages(prev => [...prev, data.message]);
         }
       } catch (error) {
         console.error('Message error:', error);
       }
+    };
+
+    newSocket.onerror = (error) => {
+      console.error('WebSocket error:', error);
     };
 
     newSocket.onclose = () => {
@@ -51,15 +82,17 @@ export default function SimpleStableChat() {
     };
 
     return () => {
+      console.log('Cleaning up WebSocket connection');
       newSocket.close();
     };
-  }, []); // Empty dependency array - only run once
+  }, [currentSessionId]); // Reconnect when session changes
 
   const sendMessage = () => {
-    if (socket && inputValue.trim()) {
+    if (socket && inputValue.trim() && currentSessionId) {
+      console.log('Sending message to session', currentSessionId);
       socket.send(JSON.stringify({
         type: 'send_message',
-        sessionId: 1,
+        sessionId: currentSessionId,
         userId: 1,
         content: inputValue,
         emojiTags: [],
@@ -75,7 +108,7 @@ export default function SimpleStableChat() {
       <div className="p-4 border-b">
         <h2 className="text-xl font-semibold">The Clearing Collective</h2>
         <div className="text-sm text-gray-600">
-          Status: {isConnected ? "Connected" : "Disconnected"}
+          Status: {isConnected ? "Connected" : "Disconnected"} | Session: {currentSessionId || "None"}
         </div>
       </div>
       
