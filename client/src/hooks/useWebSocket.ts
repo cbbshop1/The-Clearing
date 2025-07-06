@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 
 interface UseWebSocketProps {
   onMessage: (data: any) => void;
@@ -10,6 +10,16 @@ export function useWebSocket({ onMessage, onError, onClose }: UseWebSocketProps)
   const [socket, setSocket] = useState<WebSocket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
+  const onMessageRef = useRef(onMessage);
+  const onErrorRef = useRef(onError);
+  const onCloseRef = useRef(onClose);
+
+  // Update refs when callbacks change
+  useEffect(() => {
+    onMessageRef.current = onMessage;
+    onErrorRef.current = onError;
+    onCloseRef.current = onClose;
+  }, [onMessage, onError, onClose]);
 
   useEffect(() => {
     const connect = () => {
@@ -27,7 +37,7 @@ export function useWebSocket({ onMessage, onError, onClose }: UseWebSocketProps)
       ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          onMessage(data);
+          onMessageRef.current(data);
         } catch (error) {
           console.error('Error parsing WebSocket message:', error);
         }
@@ -35,7 +45,7 @@ export function useWebSocket({ onMessage, onError, onClose }: UseWebSocketProps)
       
       ws.onerror = (error) => {
         console.error('WebSocket error:', error);
-        onError?.(error);
+        onErrorRef.current?.(error);
         setIsConnected(false);
       };
       
@@ -43,7 +53,7 @@ export function useWebSocket({ onMessage, onError, onClose }: UseWebSocketProps)
         console.log('WebSocket disconnected');
         setIsConnected(false);
         setSocket(null);
-        onClose?.();
+        onCloseRef.current?.();
         
         // Reconnect after 3 seconds
         reconnectTimeoutRef.current = setTimeout(() => {
@@ -64,7 +74,7 @@ export function useWebSocket({ onMessage, onError, onClose }: UseWebSocketProps)
         ws.close();
       }
     };
-  }, [onMessage, onError, onClose]);
+  }, []); // Empty dependency array to prevent reconnections
 
   return { socket, isConnected };
 }
