@@ -61,27 +61,48 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
       switch (data.type) {
         case 'session_history':
           setMessages(data.messages);
+          setIsLoading(false);
           break;
         case 'new_message':
           setMessages(prev => [...prev, data.message]);
+          // Only stop loading if it's an AI message (response completed)
+          if (data.message.type.startsWith('ai_')) {
+            setIsLoading(false);
+          }
           break;
         case 'ai_error':
           console.error('AI Error:', data.error);
+          setIsLoading(false);
+          break;
+        case 'error':
+          console.error('WebSocket Error:', data.message);
+          setIsLoading(false);
           break;
       }
-      setIsLoading(false);
     },
   });
 
   useEffect(() => {
-    if (socket && sessionId && userId) {
+    if (socket && sessionId && userId && socket.readyState === WebSocket.OPEN) {
+      // First leave any existing session
       socket.send(JSON.stringify({
-        type: 'join_session',
-        sessionId,
-        userId,
+        type: 'leave_session',
       }));
+      
+      // Small delay before joining new session
+      setTimeout(() => {
+        if (socket.readyState === WebSocket.OPEN) {
+          socket.send(JSON.stringify({
+            type: 'join_session',
+            sessionId,
+            userId,
+          }));
+        }
+      }, 50);
+      
       // Clear forwarded messages state for new session
       setForwardedMessages(new Set());
+      setMessages([]); // Clear messages when switching sessions
     }
   }, [socket, sessionId, userId]);
 
@@ -103,6 +124,12 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
 
   const handleSendMessage = async () => {
     if ((!currentMessage.trim() && selectedFiles.length === 0) || !socket || !sessionId || !userId) return;
+    
+    // Ensure WebSocket is connected before sending
+    if (socket.readyState !== WebSocket.OPEN) {
+      console.log('WebSocket not ready, message not sent');
+      return;
+    }
 
     const emojiTags = extractEmojis(currentMessage);
     

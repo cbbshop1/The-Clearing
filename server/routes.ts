@@ -193,9 +193,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .map(m => `${m.type}: ${m.content}`)
         .join('\n') || '';
 
-      // Generate AI responses
+      // Generate AI responses sequentially to avoid race conditions
       for (const model of filteredModels) {
         try {
+          console.log(`Generating AI response from ${model.name} for session ${sessionId}`);
+          
           const aiResponse = await aiService.generateResponse(
             content,
             context,
@@ -216,6 +218,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             metadata: aiResponse.metadata,
           });
 
+          console.log(`Broadcasting AI message from ${model.name} to session ${sessionId}`);
+          
           // Broadcast AI message to all clients in session
           broadcastToSession(sessionId, {
             type: 'new_message',
@@ -224,6 +228,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
               timestamp: aiMessage.createdAt || new Date(),
             },
           });
+          
+          // Small delay between models to prevent overwhelming the client
+          if (filteredModels.length > 1) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
         } catch (error) {
           console.error(`Error generating response from ${model.name}:`, error);
           
