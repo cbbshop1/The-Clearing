@@ -132,7 +132,7 @@ This is a full-stack web application that provides a platform for human-moderate
 - July 06, 2025: Improved file upload recognition with better filename display in AI prompts
 - July 06, 2025: Added file content reading for text files - AI models can now analyze actual file content
 - July 06, 2025: Support for text-based file types (.txt, .md, .json, .csv, .js, .ts, .html, .css, etc.)
-- July 06, 2025: Content truncation at 2000 characters to prevent overwhelming AI models
+- July 06, 2025: Removed artificial file size restrictions per user's research requirements
 
 ## User Preferences
 

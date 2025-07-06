@@ -52,8 +52,7 @@ export class AIService {
       
       const content = fs.readFileSync(fullPath, 'utf-8');
       
-      // Limit content length to avoid overwhelming the AI
-      return content.length > 2000 ? content.substring(0, 2000) + '...[truncated]' : content;
+      return content;
     } catch (error) {
       console.error('Error reading file:', error);
       return null;
