@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Settings, Plus, Download, Bot } from "lucide-react";
+import { Settings, Plus, Download, Bot, Edit, Trash2, Check, X } from "lucide-react";
 import { User, Session } from "@shared/schema";
 
 interface SidebarProps {
@@ -13,6 +13,8 @@ interface SidebarProps {
   onSessionSelect: (sessionId: number) => void;
   onNewSession: (title: string, emoji: string) => void;
   onExportSession: (sessionId: number) => void;
+  onDeleteSession: (sessionId: number) => void;
+  onUpdateSession: (sessionId: number, title: string, emoji: string) => void;
 }
 
 export default function Sidebar({
@@ -22,10 +24,15 @@ export default function Sidebar({
   onSessionSelect,
   onNewSession,
   onExportSession,
+  onDeleteSession,
+  onUpdateSession,
 }: SidebarProps) {
   const [newSessionTitle, setNewSessionTitle] = useState("");
   const [newSessionEmoji, setNewSessionEmoji] = useState("😊");
   const [isNewSessionOpen, setIsNewSessionOpen] = useState(false);
+  const [editingSessionId, setEditingSessionId] = useState<number | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editEmoji, setEditEmoji] = useState("😊");
 
   const handleCreateSession = () => {
     if (newSessionTitle.trim()) {
@@ -33,6 +40,33 @@ export default function Sidebar({
       setNewSessionTitle("");
       setNewSessionEmoji("😊");
       setIsNewSessionOpen(false);
+    }
+  };
+
+  const handleEditSession = (sessionId: number, currentTitle: string, currentEmoji: string | null) => {
+    setEditingSessionId(sessionId);
+    setEditTitle(currentTitle);
+    setEditEmoji(currentEmoji || "😊");
+  };
+
+  const handleSaveEdit = () => {
+    if (editingSessionId && editTitle.trim()) {
+      onUpdateSession(editingSessionId, editTitle.trim(), editEmoji);
+      setEditingSessionId(null);
+      setEditTitle("");
+      setEditEmoji("😊");
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingSessionId(null);
+    setEditTitle("");
+    setEditEmoji("😊");
+  };
+
+  const handleDeleteSession = (sessionId: number) => {
+    if (window.confirm("Are you sure you want to delete this session? This action cannot be undone.")) {
+      onDeleteSession(sessionId);
     }
   };
 
@@ -138,22 +172,91 @@ export default function Sidebar({
               {sessions.map((session) => (
                 <div
                   key={session.id}
-                  className={`p-2 rounded cursor-pointer transition-colors ${
+                  className={`p-2 rounded transition-colors group ${
                     selectedSessionId === session.id
                       ? "bg-primary/10 border border-primary/20"
                       : "hover:bg-muted"
                   }`}
-                  onClick={() => onSessionSelect(session.id)}
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2 min-w-0">
-                      <span className="text-sm">{session.emoji}</span>
-                      <span className="text-xs font-medium text-foreground truncate">{session.title}</span>
+                  {editingSessionId === session.id ? (
+                    // Edit mode
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-1">
+                        <Input
+                          value={editEmoji}
+                          onChange={(e) => setEditEmoji(e.target.value)}
+                          className="w-8 h-6 text-xs text-center p-0"
+                          maxLength={2}
+                        />
+                        <Input
+                          value={editTitle}
+                          onChange={(e) => setEditTitle(e.target.value)}
+                          className="h-6 text-xs flex-1"
+                          placeholder="Session title"
+                        />
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-5 w-5 p-0"
+                          onClick={handleSaveEdit}
+                        >
+                          <Check className="h-3 w-3 text-green-600" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-5 w-5 p-0"
+                          onClick={handleCancelEdit}
+                        >
+                          <X className="h-3 w-3 text-red-600" />
+                        </Button>
+                      </div>
                     </div>
-                    <span className="text-xs text-muted-foreground flex-shrink-0">
-                      {formatTimeAgo(session.updatedAt)}
-                    </span>
-                  </div>
+                  ) : (
+                    // Display mode
+                    <div
+                      className="cursor-pointer"
+                      onClick={() => onSessionSelect(session.id)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2 min-w-0">
+                          <span className="text-sm">{session.emoji}</span>
+                          <span className="text-xs font-medium text-foreground truncate">{session.title}</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <span className="text-xs text-muted-foreground flex-shrink-0">
+                            {formatTimeAgo(session.updatedAt)}
+                          </span>
+                          <div className="opacity-0 group-hover:opacity-100 flex space-x-1 ml-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-5 w-5 p-0"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEditSession(session.id, session.title || "", session.emoji);
+                              }}
+                            >
+                              <Edit className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-5 w-5 p-0"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteSession(session.id);
+                              }}
+                            >
+                              <Trash2 className="h-3 w-3 text-red-600" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

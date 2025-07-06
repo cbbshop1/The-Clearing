@@ -359,6 +359,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update session
+  app.put('/api/sessions/:id', async (req, res) => {
+    try {
+      const sessionId = parseInt(req.params.id);
+      const updates = req.body;
+      
+      const session = await storage.updateSession(sessionId, updates);
+      res.json(session);
+    } catch (error) {
+      console.error('Error updating session:', error);
+      res.status(400).json({ message: 'Failed to update session' });
+    }
+  });
+
+  // Delete session
+  app.delete('/api/sessions/:id', async (req, res) => {
+    try {
+      const sessionId = parseInt(req.params.id);
+      await storage.deleteSession(sessionId);
+      res.json({ message: 'Session deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting session:', error);
+      res.status(500).json({ message: 'Failed to delete session' });
+    }
+  });
+
   // Get active AI models
   app.get('/api/models', async (req, res) => {
     try {

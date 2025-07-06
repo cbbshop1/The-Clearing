@@ -72,6 +72,42 @@ export default function Home() {
     }
   };
 
+  const handleDeleteSession = async (sessionId: number) => {
+    try {
+      const response = await fetch(`/api/sessions/${sessionId}`, {
+        method: 'DELETE',
+      });
+      
+      if (response.ok) {
+        // If we're deleting the currently selected session, clear the selection
+        if (selectedSessionId === sessionId) {
+          setSelectedSessionId(null);
+        }
+        // Refetch sessions to update the list
+        window.location.reload();
+      }
+    } catch (error) {
+      console.error('Delete failed:', error);
+    }
+  };
+
+  const handleUpdateSession = async (sessionId: number, title: string, emoji: string) => {
+    try {
+      const response = await fetch(`/api/sessions/${sessionId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, emoji }),
+      });
+      
+      if (response.ok) {
+        // Refetch sessions to update the list
+        window.location.reload();
+      }
+    } catch (error) {
+      console.error('Update failed:', error);
+    }
+  };
+
   return (
     <>
       <div className="h-screen flex overflow-hidden bg-background">
@@ -84,6 +120,8 @@ export default function Home() {
             onSessionSelect={setSelectedSessionId}
             onNewSession={handleNewSession}
             onExportSession={handleExportSession}
+            onDeleteSession={handleDeleteSession}
+            onUpdateSession={handleUpdateSession}
           />
         </div>
         
