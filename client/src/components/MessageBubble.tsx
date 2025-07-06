@@ -7,9 +7,10 @@ import { ChatMessage } from "@shared/schema";
 interface MessageBubbleProps {
   message: ChatMessage;
   onForward?: (message: ChatMessage) => void;
+  isForwarded?: boolean;
 }
 
-export default function MessageBubble({ message, onForward }: MessageBubbleProps) {
+export default function MessageBubble({ message, onForward, isForwarded = false }: MessageBubbleProps) {
   const formatTime = (date: Date) => {
     return new Date(date).toLocaleTimeString('en-US', {
       hour: 'numeric',
@@ -102,13 +103,14 @@ export default function MessageBubble({ message, onForward }: MessageBubbleProps
           {(message.type === 'ai_openai' || message.type === 'ai_claude') && onForward && (
             <div className="flex justify-end mt-2">
               <Button
-                variant="ghost"
+                variant={isForwarded ? "default" : "ghost"}
                 size="sm"
                 onClick={() => onForward(message)}
-                className="text-xs h-6 px-2"
+                className={`text-xs h-6 px-2 ${isForwarded ? 'bg-green-600 hover:bg-green-700 text-white' : ''}`}
+                disabled={isForwarded}
               >
                 <Forward className="h-3 w-3 mr-1" />
-                Forward to {message.type === 'ai_openai' ? 'Claude' : 'GPT-4o'}
+                {isForwarded ? 'Forwarded' : `Forward to ${message.type === 'ai_openai' ? 'Claude' : 'GPT-4o'}`}
               </Button>
             </div>
           )}

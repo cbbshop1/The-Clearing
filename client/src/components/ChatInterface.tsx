@@ -26,6 +26,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
   const [currentMessage, setCurrentMessage] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [forwardedMessages, setForwardedMessages] = useState<Set<number>>(new Set());
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -75,6 +76,8 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
         sessionId,
         userId,
       }));
+      // Clear forwarded messages state for new session
+      setForwardedMessages(new Set());
     }
   }, [socket, sessionId, userId]);
 
@@ -107,6 +110,9 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
     
     const targetProvider = message.type === 'ai_openai' ? 'claude' : 'openai';
     const forwardContent = `[Forwarded from ${message.type === 'ai_openai' ? 'OpenAI GPT-4o' : 'Claude'}]: ${message.content}`;
+    
+    // Mark message as forwarded
+    setForwardedMessages(prev => new Set(prev).add(message.id));
     
     setIsLoading(true);
     socket.send(JSON.stringify({
@@ -179,9 +185,61 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
       {/* Chat Messages */}
       <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
         <div className="space-y-6">
-          {messages.map((message) => (
-            <MessageBubble key={message.id} message={message} onForward={handleForwardMessage} />
-          ))}
+          {messages.map((message) => {
+            // Group AI responses that follow each other
+            if (message.type === 'ai_openai' || message.type === 'ai_claude') {
+              const nextMessage = messages[messages.indexOf(message) + 1];
+              const isGroupedWithNext = nextMessage && 
+                (nextMessage.type === 'ai_openai' || nextMessage.type === 'ai_claude') &&
+                nextMessage.type !== message.type;
+              
+              const prevMessage = messages[messages.indexOf(message) - 1];
+              const isGroupedWithPrev = prevMessage && 
+                (prevMessage.type === 'ai_openai' || prevMessage.type === 'ai_claude') &&
+                prevMessage.type !== message.type;
+                
+              if (isGroupedWithNext) {
+                // Show side-by-side layout
+                return (
+                  <div key={`${message.id}-${nextMessage.id}`} className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <div className="text-xs font-medium text-muted-foreground mb-2">
+                        {message.type === 'ai_openai' ? 'OpenAI GPT-4o' : 'Claude'}
+                      </div>
+                      <MessageBubble 
+                        message={message} 
+                        onForward={handleForwardMessage} 
+                        isForwarded={forwardedMessages.has(message.id)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <div className="text-xs font-medium text-muted-foreground mb-2">
+                        {nextMessage.type === 'ai_openai' ? 'OpenAI GPT-4o' : 'Claude'}
+                      </div>
+                      <MessageBubble 
+                        message={nextMessage} 
+                        onForward={handleForwardMessage} 
+                        isForwarded={forwardedMessages.has(nextMessage.id)}
+                      />
+                    </div>
+                  </div>
+                );
+              } else if (isGroupedWithPrev) {
+                // Skip this message as it's already rendered in the previous group
+                return null;
+              }
+            }
+            
+            // Regular message display
+            return (
+              <MessageBubble 
+                key={message.id} 
+                message={message} 
+                onForward={handleForwardMessage} 
+                isForwarded={forwardedMessages.has(message.id)}
+              />
+            );
+          })}
           
           {isLoading && (
             <div className="flex items-start space-x-3">
