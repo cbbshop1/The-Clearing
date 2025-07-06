@@ -22,7 +22,7 @@ export function useWebSocketManager({ onMessage }: UseWebSocketManagerProps) {
       websocketManager.removeMessageHandler(onMessage);
       websocketManager.removeConnectionCallback(connectionCallback);
     };
-  }, []); // Remove dependencies to prevent re-registration
+  }, [onMessage, connectionCallback]); // Include stable callbacks
 
   const send = useCallback((data: any) => {
     websocketManager.send(data);
