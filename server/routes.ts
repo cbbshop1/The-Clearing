@@ -229,7 +229,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get moderator user (for demo purposes)
   app.get('/api/moderator', async (req, res) => {
     try {
-      const moderator = await storage.getUserByUsername('dr_sarah_chen');
+      const moderator = await storage.getUserByUsername('christopher_michael');
       res.json(moderator);
     } catch (error) {
       console.error('Error fetching moderator:', error);

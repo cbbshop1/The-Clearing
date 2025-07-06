@@ -51,11 +51,11 @@ export class MemStorage implements IStorage {
   constructor() {
     // Initialize with default moderator user
     this.createUser({
-      username: "dr_sarah_chen",
-      email: "sarah.chen@example.com",
-      firstName: "Sarah",
-      lastName: "Chen",
-      profileImageUrl: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&h=100",
+      username: "christopher_michael",
+      email: "christopher.michael@example.com",
+      firstName: "Christopher",
+      lastName: "Michael",
+      profileImageUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&h=100",
       role: "moderator",
     });
 

@@ -97,7 +97,10 @@ This is a full-stack web application that provides a platform for human-moderate
 
 ## Changelog
 
-- July 06, 2025. Initial setup
+- July 06, 2025: Initial setup
+- July 06, 2025: Renamed from "Emoji Companion" to "The Clearing Collective"
+- July 06, 2025: Updated moderator from Sarah Chen to Christopher Michael
+- July 06, 2025: Enhanced AI prompts for multi-model collaborative conversations
 
 ## User Preferences
 
