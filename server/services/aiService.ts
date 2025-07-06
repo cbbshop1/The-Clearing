@@ -38,20 +38,18 @@ export interface AIResponse {
 export class AIService {
   async generateResponse(
     message: string,
-    context: string,
+    conversationHistory: any[],
     emojiTags: string[],
     model: AiModel,
     files: string[] = []
   ): Promise<AIResponse> {
     const startTime = Date.now();
     
-    const prompt = this.buildPrompt(message, context, emojiTags, files);
-    
     try {
       if (model.provider === "openai") {
-        return await this.callOpenAI(prompt, model, startTime);
+        return await this.callOpenAI(message, conversationHistory, emojiTags, files, model, startTime);
       } else if (model.provider === "anthropic") {
-        return await this.callAnthropic(prompt, model, startTime);
+        return await this.callAnthropic(message, conversationHistory, emojiTags, files, model, startTime);
       } else {
         throw new Error(`Unsupported AI provider: ${model.provider}`);
       }
@@ -89,10 +87,77 @@ Critical Guidelines:
 Respond as if you are continuing an existing conversation, not starting a new one.`;
   }
 
-  private async callOpenAI(prompt: string, model: AiModel, startTime: number): Promise<AIResponse> {
+  private buildSystemPrompt(emojiTags: string[], files: string[]): string {
+    const emojiContext = emojiTags.length > 0 
+      ? `\n\nEmoji context: ${emojiTags.join(", ")} - These emojis provide emotional context for the conversation.`
+      : "";
+
+    const fileContext = files.length > 0 
+      ? `\n\nAttached files: ${files.length} file(s) have been shared. Please analyze and discuss the content of these files in your response.`
+      : "";
+
+    return `You are participating in "The Clearing Collective" - a platform for human-moderated conversations between multiple AI models. Your role is to provide thoughtful, balanced perspectives that contribute to a collaborative dialogue.
+
+Critical Guidelines:
+- This is a CONTINUING conversation - reference and build upon what has been discussed
+- If you see previous messages from other AI models (🤖 OpenAI, 🎭 Claude), acknowledge and respond to them
+- Do NOT introduce yourself or act like this is your first message unless it actually is
+- Continue the conversation naturally, building on previous points
+- Use emojis meaningfully to enhance emotional expression
+- If files are attached, analyze and discuss their content thoughtfully
+- Be supportive and constructive, contributing to a balanced conversation
+- Show awareness of the ongoing discussion and your role in it
+
+Respond as if you are continuing an existing conversation, not starting a new one.${emojiContext}${fileContext}`;
+  }
+
+  private buildOpenAIMessages(conversationHistory: any[], currentMessage: string, systemPrompt: string): any[] {
+    const messages = [{ role: "system", content: systemPrompt }];
+    
+    // Add conversation history
+    for (const msg of conversationHistory.slice(-8)) { // Last 8 messages for context
+      if (msg.type === 'user') {
+        messages.push({ role: "user", content: msg.content });
+      } else if (msg.type === 'ai_openai') {
+        messages.push({ role: "assistant", content: msg.content });
+      } else if (msg.type === 'ai_claude') {
+        messages.push({ role: "user", content: `Claude AI responded: ${msg.content}` });
+      }
+    }
+    
+    // Add current message
+    messages.push({ role: "user", content: currentMessage });
+    
+    return messages;
+  }
+
+  private buildAnthropicMessages(conversationHistory: any[], currentMessage: string): any[] {
+    const messages = [];
+    
+    // Add conversation history
+    for (const msg of conversationHistory.slice(-8)) { // Last 8 messages for context
+      if (msg.type === 'user') {
+        messages.push({ role: "user", content: msg.content });
+      } else if (msg.type === 'ai_claude') {
+        messages.push({ role: "assistant", content: msg.content });
+      } else if (msg.type === 'ai_openai') {
+        messages.push({ role: "user", content: `OpenAI responded: ${msg.content}` });
+      }
+    }
+    
+    // Add current message
+    messages.push({ role: "user", content: currentMessage });
+    
+    return messages;
+  }
+
+  private async callOpenAI(message: string, conversationHistory: any[], emojiTags: string[], files: string[], model: AiModel, startTime: number): Promise<AIResponse> {
+    const systemPrompt = this.buildSystemPrompt(emojiTags, files);
+    const messages = this.buildOpenAIMessages(conversationHistory, message, systemPrompt);
+    
     const response = await openai.chat.completions.create({
       model: "gpt-4o", // The newest OpenAI model is "gpt-4o"
-      messages: [{ role: "user", content: prompt }],
+      messages,
       temperature: (model.config as any)?.temperature || 0.7,
       max_tokens: (model.config as any)?.maxTokens || 1000,
     });
@@ -108,16 +173,20 @@ Respond as if you are continuing an existing conversation, not starting a new on
       metadata: {
         responseTime,
         empathyScore: this.calculateEmpathyScore(content),
-        relevanceScore: this.calculateRelevanceScore(content, prompt),
+        relevanceScore: this.calculateRelevanceScore(content, message),
       },
     };
   }
 
-  private async callAnthropic(prompt: string, model: AiModel, startTime: number): Promise<AIResponse> {
+  private async callAnthropic(message: string, conversationHistory: any[], emojiTags: string[], files: string[], model: AiModel, startTime: number): Promise<AIResponse> {
+    const systemPrompt = this.buildSystemPrompt(emojiTags, files);
+    const messages = this.buildAnthropicMessages(conversationHistory, message);
+    
     const response = await anthropic.messages.create({
       model: DEFAULT_MODEL_STR, // "claude-sonnet-4-20250514"
       max_tokens: (model.config as any)?.maxTokens || 1000,
-      messages: [{ role: "user", content: prompt }],
+      system: systemPrompt,
+      messages,
     });
 
     const content = response.content[0].type === "text" ? response.content[0].text : "";
@@ -131,7 +200,7 @@ Respond as if you are continuing an existing conversation, not starting a new on
       metadata: {
         responseTime,
         empathyScore: this.calculateEmpathyScore(content),
-        relevanceScore: this.calculateRelevanceScore(content, prompt),
+        relevanceScore: this.calculateRelevanceScore(content, message),
       },
     };
   }

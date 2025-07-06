@@ -117,6 +117,9 @@ This is a full-stack web application that provides a platform for human-moderate
 - July 06, 2025: Enhanced conversation context with better AI memory (increased from 5 to 10 message history)
 - July 06, 2025: Improved AI prompts to reference previous conversation points and maintain continuity
 - July 06, 2025: Adjusted layout - reduced model panel width from 320px to 256px for larger chat area
+- July 06, 2025: Major AI service refactor - implemented proper conversation history as message arrays instead of context strings
+- July 06, 2025: Enhanced AI model continuity by passing conversation history in proper API format for both OpenAI and Anthropic
+- July 06, 2025: Fixed "new instance" issue by restructuring how AI models receive and process conversation context
 
 ## User Preferences
 

@@ -149,28 +149,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return false;
       });
       
-      // Get session context with more comprehensive history
+      // Get session with conversation history
       const session = await storage.getSession(sessionId);
-      const context = session?.messages
-        .slice(-10) // Last 10 messages for better context
-        .map(m => {
-          const author = m.type === 'user' ? (m.user?.firstName || 'User') : 
-                        m.type === 'ai_openai' ? '🤖 OpenAI' :
-                        m.type === 'ai_claude' ? '🎭 Claude' : 'AI';
-          return `${author}: ${m.content}`;
-        })
-        .join('\n') || '';
+      const conversationHistory = session?.messages || [];
       
-      // Debug: Log the context being sent to AI
-      console.log('Context being sent to AI:', context);
-      console.log('Number of messages in context:', session?.messages?.length || 0);
+      // Debug: Log the conversation history being sent to AI
+      console.log('Number of messages in conversation history:', conversationHistory.length);
 
       // Generate AI responses
       for (const model of filteredModels) {
         try {
           const aiResponse = await aiService.generateResponse(
             content,
-            context,
+            conversationHistory,
             emojiTags || [],
             model,
             files || []
@@ -237,10 +228,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Extract emojis from forwarded content
       const emojiTags = extractEmojis(content);
       
+      // Get conversation history for forwarded message
+      const session = await storage.getSession(sessionId);
+      const conversationHistory = session?.messages || [];
+      
       // Generate AI response from target model
       const aiResponse = await aiService.generateResponse(
-        content,
-        JSON.stringify({ sessionId, forwardedMessage: true }),
+        `Forwarded message: ${content}`,
+        conversationHistory,
         emojiTags,
         targetModel
       );
