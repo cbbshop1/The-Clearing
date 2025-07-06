@@ -29,7 +29,7 @@ export default function ModelPanel({ aiModels }: ModelPanelProps) {
   };
 
   return (
-    <div className="w-80 bg-card border-l border-border flex flex-col">
+    <div className="w-64 bg-card border-l border-border flex flex-col">
       {/* Model Panel Header */}
       <div className="p-4 border-b border-border">
         <h3 className="text-lg font-semibold text-foreground">AI Models</h3>
