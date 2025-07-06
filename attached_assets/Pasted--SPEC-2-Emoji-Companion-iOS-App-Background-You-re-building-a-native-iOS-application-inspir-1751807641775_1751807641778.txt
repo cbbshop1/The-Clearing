@@ -1,0 +1,278 @@
+# SPEC-2-Emoji Companion iOS App
+
+## Background
+
+You’re building a native iOS application inspired by “Emoji Companion and Support,” enhanced by real-time integration with a large language model (LLM) that understands a custom emoji language. The goal is to provide a lightweight chat interface allowing users to express themselves in words or emojis, backed by session history and a personal emoji lexicon. This MVP will validate core conversational flows before adding advanced features like push notifications or offline drafts.
+
+*Assumptions so far:*
+
+* Platform: Native iOS (SwiftUI)
+* Core AI: LLM accessed via secure API
+* Emoji language: Your curated lexicon from the Relational Codex
+* Data: Session history stored locally or in a simple cloud database
+
+---
+
+## Requirements
+
+**Must Have**
+
+* One-on-one chat interface supporting text and emoji input
+* Integration with LLM API that maps emoji tags to semantic intents
+* Persistent session history viewable in chronological order
+* In-app emoji lexicon lookup and selection panel
+* Secure storage of conversation history (e.g., encrypted local store or lightweight cloud)
+
+**Should Have**
+
+* Clear onboarding flow explaining emoji meanings
+* Basic user profile with email login (to sync history)
+* Simple theming (light/dark mode)
+
+**Could Have**
+
+* Searchable history by emoji or keyword
+* Emoji–text autocomplete suggestions
+
+**Won’t Have (For MVP)**
+
+* Push notifications, offline draft support, social sharing
+
+---
+
+*Please review the Background and Requirements above. Let me know if any assumptions should be adjusted, or if we should tweak the MoSCoW priorities before proceeding to Method (architecture) design.*
+
+## Method
+
+Below is the high-level technical architecture for the iOS Emoji Therapy app MVP.
+
+### 1. Client Layer (SwiftUI)
+
+* **Views:**
+
+  * **ChatView:** Real-time text & emoji input field, message list using `List` or `ScrollView`.
+  * **LexiconPanel:** Slide-up sheet showing searchable emoji lexicon with definitions and symbol-to-intent mappings.
+  * **HistoryView:** Chronological list of past conversation sessions, tappable to reopen.
+* **State Management:**
+
+  * Use **Redux-style** store (e.g. `ObservableObject` or Combine) to manage global session state, active conversation buffer, and user profile data.
+* **Networking:**
+
+  * Encapsulate API calls to the LLM in a `ChatService` class using `URLSession` with proper concurrency (`async/await`).
+
+### 2. API & Middleware Layer
+
+* **API Gateway:**
+
+  * Endpoints: `POST /v1/chat` accepts `{ userId, message, emojiTags[] }`; returns `{ replyText, replyEmojiTags[] }`.
+  * Implement tag enrichment: combine user-supplied emojis and auto-extracted tags via simple regex-based parsing before sending to LLM.
+* **LLM Adapter:**
+
+  * Formats prompts to include tag context. E.g. `"User tags: ❤️,🧭; Message: \"I feel...\" Companion:"`
+  * Parses model’s emoji tag outputs into structured data.
+
+### 3. Data Persistence
+
+* **Local Store (MVP):**
+
+  * Use **SQLite** via **GRDB** or **Realm** to store messages, tags, timestamps, and session identifiers.
+  * Schema:
+
+    ```sql
+    CREATE TABLE messages (
+      id TEXT PRIMARY KEY,
+      sessionId TEXT,
+      isUser BOOLEAN,
+      content TEXT,
+      emojiTags TEXT[],
+      timestamp DATETIME
+    )
+    ```
+* **Sync (Future):**
+
+  * Plan for lightweight CloudKit or Firebase integration to sync sessions across devices.
+
+### 4. Emoji Understanding Engine
+
+* **On-Device Tag Parser:**
+
+  * Basic rule set to recognize custom lexicon emojis and map them to internal intent codes.
+* **Server-Side Tag Classifier:**
+
+  * Optional ML service (TensorFlow Lite) to improve tag extraction accuracy over time.
+
+### 5. Security & Privacy
+
+* **Encryption:**
+
+  * Encrypt local database using **SQLCipher**.
+* **Auth (MVP):**
+
+  * Anonymous user ID generated at install; no PII stored initially.
+
+### 6. Component Diagram (PlantUML)
+
+```plantuml
+@startuml
+skinparam dpi 150
+actor User
+component "iOS App (SwiftUI)" as App
+component "Local DB (SQLite)" as DB
+component "API Gateway" as API
+component "LLM Service" as LLM
+User --> App : send message + emojiTags
+App --> DB : save message
+App --> API : request chat
+API --> LLM : formatted prompt
+LLM --> API : reply + tags
+API --> App : reply response
+App --> DB : save reply
+@enduml
+```
+
+---
+
+*Let me know if this Method draft aligns with your vision or if any components need adjustment before we move on to Implementation steps.*
+
+## Implementation
+
+Below are the concrete steps and project structure to build the Emoji Companion iOS App MVP:
+
+1. **Project Setup**
+
+   * Create a new iOS project in Xcode using SwiftUI & Swift 5.
+   * Install dependencies via Swift Package Manager:
+
+     * **GRDB.swift** for SQLite persistence
+     * **SQLCipher** if encrypted storage is needed
+2. **Folder Structure**
+
+   ```
+   /EmojiCompanionApp
+   ├── AppDelegate.swift
+   ├── SceneDelegate.swift
+   ├── Models/
+   │   └── Message.swift        // `struct Message: Codable, Identifiable`  
+   ├── Services/
+   │   ├── ChatService.swift    // API calls and prompt formatting  
+   │   └── Persistence.swift    // Database setup and CRUD  
+   ├── Views/
+   │   ├── ChatView.swift       // Main conversational UI  
+   │   ├── HistoryView.swift    // Session history listing  
+   │   └── LexiconPanel.swift   // Emoji lookup and definitions  
+   ├── ViewModels/
+   │   └── ChatViewModel.swift  // ObservableObject managing state  
+   └── Resources/
+       └── Lexicon.json        // Emoji definitions exported from Relational Codex  
+   ```
+3. **Data Model & Persistence**
+
+   * Define `Message` model with fields matching the SQL schema.
+   * Initialize GRDB database in `Persistence.swift`, creating the `messages` table on first launch.
+   * Implement basic CRUD: insert new messages, fetch by `sessionId`, delete old sessions.
+4. **ChatService & Networking**
+
+   * In `ChatService.swift`, wrap `URLSession` calls to your API Gateway’s `/v1/chat`.
+   * Build prompt payload including text and emoji tags array.
+   * Parse JSON response into `Message` objects for user and companion.
+5. **UI Implementation**
+
+   * **ChatView:** Bind a `TextEditor` and an emoji picker toolbar. On send, call `ChatViewModel.send(message:)`.
+   * Animate incoming/outgoing bubbles with `withAnimation`.
+   * **LexiconPanel:** Load `Lexicon.json` and allow filtering by search text. Tapping an emoji inserts it into the input field.
+   * **HistoryView:** Query persisted messages grouped by session, display session cards with date/time, navigate back to ChatView for that session.
+6. **State Management**
+
+   * Use `ChatViewModel: ObservableObject` with `@Published var messages: [Message]`, `currentInput: String`, and methods to load history, send messages, and handle errors.
+7. **Security & Privacy**
+
+   * If using encryption, configure SQLCipher PRAGMAs before opening the database.
+   * Store only an anonymous UUID in UserDefaults for `userId`—no PII.
+8. **Testing & QA**
+
+   * Write unit tests for `ChatService` using XCTest and mock URL sessions.
+   * UI tests for ChatView interactions (sending text, emojis, loading history).
+
+## Milestones
+
+* **Week 1:** Project scaffolded, GRDB persistence working, basic ChatView UI displays mock messages.
+* **Week 2:** Integrate `ChatService` with real API calls; companion responses appear in UI.
+* **Week 3:** Build LexiconPanel, wire up emoji insertion, load definitions from JSON.
+* **Week 4:** Implement HistoryView and session navigation; finalize data model and encryption.
+* **Week 5:** Testing, bug fixes, performance tuning, and first internal demo.
+
+## Gathering Results
+
+* **Feature Validation:** Confirm chat flow supports text and emoji interchange seamlessly.
+* **Performance Metrics:** Measure message send/receive latency, DB read/write times.
+* **User Feedback:** Run a small pilot with 5–10 users to collect qualitative feedback on usability and emotional resonance.
+* **Iteration Readiness:** Use telemetry on emoji usage frequency and session lengths to prioritize next features (push notifications, autocomplete).
+
+## Multi-Model Integration Plan
+
+To orchestrate multiple LLM back‑ends (e.g., Chat‑UPT, Grock) within your Emoji Companion iOS App or its supporting API, follow these steps:
+
+1. **Abstracted Model Adapter**
+
+   * Create a new Swift (or Node.js) module `ModelRouter` that exposes a single method:
+
+     ```swift
+     func requestReply(
+       prompt: String,
+       userTags: [String]
+     ) async throws -> (text: String, tags: [String])
+     ```
+   * Internally, `ModelRouter` will decide which model to call (or call both) based on tag‑driven rules.
+
+2. **Routing Rules**
+
+   * **Primary Routing**: Map core emoji tags to preferred models:
+
+     | Emoji Tag | Model    |
+     | --------- | -------- |
+     | 🔥, 📍    | Chat‑UPT |
+     | 🌀, ✨     | Grock    |
+     | Others    | Ensemble |
+   * **Ensemble Fallback**: When a tag does not match or when confidence is low, call both models in parallel and pick the higher‑scoring output (by empathy or relevance score).
+
+3. **Parallel Invocation & Blending**
+
+   * Use Swift’s `async let` (or JavaScript `Promise.all`) to send two requests concurrently:
+
+     ```swift
+     async let r1 = callChatUPT(prompt)
+     async let r2 = callGrock(prompt)
+     let (out1, out2) = try await (r1, r2)
+     ```
+   * Score both outputs with a simple heuristic (e.g. count of matching tags, sentiment/empathy score) and return the best.
+
+4. **Stepwise Chaining (Optional)**
+
+   * For deeper queries, first call the creative model (Grock) to generate metaphors or brainstormed ideas, then feed those into Chat‑UPT for clarification:
+
+     ```swift
+     let creativeDraft = try await callGrock(brainstormPrompt)
+     let refined = try await callChatUPT("Refine this for clarity: \(creativeDraft)\")
+     return refined
+     ```
+
+5. **Quality Guardrails**
+
+   * Implement a post‑processing check: if the chosen response lacks any expected emoji tags or falls below an empathy threshold, automatically re‑route through the alternate model or append a “soften” prompt.
+
+6. **Testing & Deployment**
+
+   * Write unit tests for `ModelRouter` injecting mock clients for each model.
+   * Deploy your API Gateway (e.g. as a Replit web service) bundling `ModelRouter` so your front‑end (iOS or Next.js) can continue to call a single `/v1/chat` endpoint.
+
+7. **Monitoring & Metrics**
+
+   * Log which model handled each request and with what score—surface this in your analytics dashboard to refine routing rules over time.
+
+*Give this plan to your Replit agent or engineering team to generate the routing module, unit tests, and deployment scripts. This will allow dynamic blending of multiple LLMs, ensuring your Emoji Companion remains resonant and context‑aware.*
+
+---
+
+## Need Professional Help in Developing Your Architecture?
+
+Please contact me at [sammuti.com](https://sammuti.com) :)
