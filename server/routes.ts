@@ -79,6 +79,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         switch (data.type) {
           case 'join_session':
+            // First, remove from any existing session
+            if (ws.sessionId) {
+              const oldSessionClients = clients.get(ws.sessionId);
+              if (oldSessionClients) {
+                const index = oldSessionClients.indexOf(ws);
+                if (index > -1) {
+                  oldSessionClients.splice(index, 1);
+                }
+              }
+            }
+            
+            // Now join the new session
             ws.userId = data.userId;
             ws.sessionId = data.sessionId;
             
@@ -102,6 +114,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
             break;
           case 'forward_message':
             await handleForwardMessage(data, ws);
+            break;
+          case 'leave_session':
+            if (ws.sessionId) {
+              const sessionClients = clients.get(ws.sessionId);
+              if (sessionClients) {
+                const index = sessionClients.indexOf(ws);
+                if (index > -1) {
+                  sessionClients.splice(index, 1);
+                }
+              }
+              ws.sessionId = undefined;
+              ws.userId = undefined;
+            }
             break;
         }
       } catch (error) {
