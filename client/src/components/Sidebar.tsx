@@ -53,36 +53,36 @@ export default function Sidebar({
   };
 
   return (
-    <div className="w-80 bg-card border-r border-border flex flex-col">
-      {/* Header */}
-      <div className="p-6 border-b border-border">
+    <div className="h-full bg-card border-r border-border flex flex-col">
+      {/* Header - Compact */}
+      <div className="p-3 border-b border-border">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-              <Bot className="text-primary-foreground" size={20} />
+          <div className="flex items-center space-x-2">
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+              <Bot className="text-primary-foreground" size={16} />
             </div>
             <div>
-              <h1 className="text-lg font-semibold text-foreground">The Clearing Collective</h1>
-              <p className="text-sm text-muted-foreground">Human-Moderated AI Conversations</p>
+              <h1 className="text-sm font-semibold text-foreground">The Clearing</h1>
+              <p className="text-xs text-muted-foreground">AI Conversations</p>
             </div>
           </div>
-          <Button variant="ghost" size="icon">
-            <Settings className="h-4 w-4" />
+          <Button variant="ghost" size="icon" className="h-7 w-7">
+            <Settings className="h-3 w-3" />
           </Button>
         </div>
       </div>
 
-      {/* User Profile */}
+      {/* User Profile - Compact */}
       {moderator && (
-        <div className="p-4 border-b border-border">
-          <div className="flex items-center space-x-3">
+        <div className="p-2 border-b border-border">
+          <div className="flex items-center space-x-2">
             <img
               src={moderator.profileImageUrl || "/default-avatar.png"}
               alt="Moderator profile"
-              className="w-10 h-10 rounded-full object-cover"
+              className="w-8 h-8 rounded-full object-cover"
             />
             <div>
-              <p className="text-sm font-medium text-foreground">
+              <p className="text-xs font-medium text-foreground">
                 {moderator.firstName} {moderator.lastName}
               </p>
               <p className="text-xs text-muted-foreground capitalize">{moderator.role}</p>
@@ -93,14 +93,14 @@ export default function Sidebar({
 
       {/* Session History */}
       <div className="flex-1 overflow-hidden">
-        <div className="p-4">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-medium text-foreground">Recent Sessions</h2>
+        <div className="p-2">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-xs font-medium text-foreground">Sessions</h2>
             <Dialog open={isNewSessionOpen} onOpenChange={setIsNewSessionOpen}>
               <DialogTrigger asChild>
-                <Button variant="ghost" size="sm" className="text-primary hover:text-primary">
-                  <Plus className="h-4 w-4 mr-1" />
-                  New Chat
+                <Button variant="ghost" size="sm" className="text-primary hover:text-primary h-6 px-2">
+                  <Plus className="h-3 w-3 mr-1" />
+                  <span className="text-xs">New</span>
                 </Button>
               </DialogTrigger>
               <DialogContent>
@@ -133,12 +133,12 @@ export default function Sidebar({
             </Dialog>
           </div>
           
-          <ScrollArea className="h-[400px]">
-            <div className="space-y-2">
+          <ScrollArea className="h-[calc(100vh-200px)]">
+            <div className="space-y-1">
               {sessions.map((session) => (
                 <div
                   key={session.id}
-                  className={`p-3 rounded-lg cursor-pointer transition-colors ${
+                  className={`p-2 rounded cursor-pointer transition-colors ${
                     selectedSessionId === session.id
                       ? "bg-primary/10 border border-primary/20"
                       : "hover:bg-muted"
@@ -146,11 +146,11 @@ export default function Sidebar({
                   onClick={() => onSessionSelect(session.id)}
                 >
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-lg">{session.emoji}</span>
-                      <span className="text-sm font-medium text-foreground">{session.title}</span>
+                    <div className="flex items-center space-x-2 min-w-0">
+                      <span className="text-sm">{session.emoji}</span>
+                      <span className="text-xs font-medium text-foreground truncate">{session.title}</span>
                     </div>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-xs text-muted-foreground flex-shrink-0">
                       {formatTimeAgo(session.updatedAt)}
                     </span>
                   </div>
@@ -162,15 +162,16 @@ export default function Sidebar({
       </div>
 
       {/* Export & Analysis */}
-      <div className="p-4 border-t border-border">
+      <div className="p-2 border-t border-border">
         <Button
           variant="outline"
-          className="w-full"
+          className="w-full h-8"
+          size="sm"
           onClick={() => selectedSessionId && onExportSession(selectedSessionId)}
           disabled={!selectedSessionId}
         >
-          <Download className="h-4 w-4 mr-2" />
-          Export Conversations
+          <Download className="h-3 w-3 mr-1" />
+          <span className="text-xs">Export</span>
         </Button>
       </div>
     </div>

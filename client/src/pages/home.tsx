@@ -75,23 +75,32 @@ export default function Home() {
   return (
     <>
       <div className="h-screen flex overflow-hidden bg-background">
-        <Sidebar
-          moderator={moderator}
-          sessions={sessions}
-          selectedSessionId={selectedSessionId}
-          onSessionSelect={setSelectedSessionId}
-          onNewSession={handleNewSession}
-          onExportSession={handleExportSession}
-        />
+        {/* Left Sidebar - Slimmer */}
+        <div className="w-64 flex-shrink-0">
+          <Sidebar
+            moderator={moderator}
+            sessions={sessions}
+            selectedSessionId={selectedSessionId}
+            onSessionSelect={setSelectedSessionId}
+            onNewSession={handleNewSession}
+            onExportSession={handleExportSession}
+          />
+        </div>
         
-        <ChatInterface
-          ref={chatInterfaceRef}
-          sessionId={selectedSessionId}
-          userId={moderator?.id}
-          onOpenEmojiLexicon={() => setIsEmojiLexiconOpen(true)}
-        />
+        {/* Main Chat Area - Takes up most space */}
+        <div className="flex-1 min-w-0">
+          <ChatInterface
+            ref={chatInterfaceRef}
+            sessionId={selectedSessionId}
+            userId={moderator?.id}
+            onOpenEmojiLexicon={() => setIsEmojiLexiconOpen(true)}
+          />
+        </div>
         
-        <ModelPanel aiModels={aiModels} />
+        {/* Right Panel - Slimmer */}
+        <div className="w-64 flex-shrink-0">
+          <ModelPanel aiModels={aiModels} />
+        </div>
       </div>
       
       <EmojiLexicon

@@ -313,37 +313,6 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
 
       {/* Chat Input */}
       <div className="bg-card border-t border-border p-4">
-        {/* Target Selection */}
-        <div className="flex space-x-2 mb-3">
-          <Button
-            variant={selectedTarget === 'both' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setSelectedTarget('both')}
-            className="flex items-center space-x-1"
-          >
-            <span>🤖🎭</span>
-            <span>Both</span>
-          </Button>
-          <Button
-            variant={selectedTarget === 'openai' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setSelectedTarget('openai')}
-            className="flex items-center space-x-1"
-          >
-            <span>🤖</span>
-            <span>OpenAI</span>
-          </Button>
-          <Button
-            variant={selectedTarget === 'claude' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setSelectedTarget('claude')}
-            className="flex items-center space-x-1"
-          >
-            <span>🎭</span>
-            <span>Claude</span>
-          </Button>
-        </div>
-        
         {/* File Preview */}
         {selectedFiles.length > 0 && (
           <div className="mb-3 p-3 bg-muted rounded-lg">
@@ -371,7 +340,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
           </div>
         )}
         
-        <div className="flex items-end space-x-3">
+        <div className="flex items-end space-x-3 mb-3">
           <div className="flex-1 relative">
             <Textarea
               ref={textareaRef}
@@ -411,6 +380,37 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
             ) : (
               <Send className="h-4 w-4" />
             )}
+          </Button>
+        </div>
+        
+        {/* Target Selection - Now below the input */}
+        <div className="flex justify-center space-x-2">
+          <Button
+            variant={selectedTarget === 'both' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setSelectedTarget('both')}
+            className="flex items-center space-x-1"
+          >
+            <span>🤖🎭</span>
+            <span>Both</span>
+          </Button>
+          <Button
+            variant={selectedTarget === 'openai' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setSelectedTarget('openai')}
+            className="flex items-center space-x-1"
+          >
+            <span>🤖</span>
+            <span>OpenAI</span>
+          </Button>
+          <Button
+            variant={selectedTarget === 'claude' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setSelectedTarget('claude')}
+            className="flex items-center space-x-1"
+          >
+            <span>🎭</span>
+            <span>Claude</span>
           </Button>
         </div>
         

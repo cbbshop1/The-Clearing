@@ -113,6 +113,9 @@ This is a full-stack web application that provides a platform for human-moderate
 - July 06, 2025: Implemented file upload functionality with support for images, documents, and text files
 - July 06, 2025: Added file display in message bubbles with preview for images and download buttons
 - July 06, 2025: Enhanced AI prompts to analyze and discuss uploaded file content
+- July 06, 2025: Redesigned layout with slimmer side panels (256px each) and expanded conversation area
+- July 06, 2025: Moved choice buttons below input field to avoid interference with popup bars
+- July 06, 2025: Compacted sidebar and model panel components for better screen space utilization
 
 ## User Preferences
 
