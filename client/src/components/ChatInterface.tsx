@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, forwardRef, useImperativeHandle, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ScrollArea } from "@/components/ui/scroll-area";
+
 import { Badge } from "@/components/ui/badge";
 import { Smile, Send, MoreHorizontal, Paperclip, X } from "lucide-react";
 import { websocketManager } from "@/lib/websocketManager";
@@ -283,7 +283,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
       </div>
 
       {/* Chat Messages */}
-      <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
+      <div className="flex-1 p-4 overflow-y-auto" ref={scrollAreaRef}>
         <div className="space-y-6">
           {messages.map((message, index) => {
             // Group AI responses that follow each other
@@ -363,7 +363,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
             </div>
           )}
         </div>
-      </ScrollArea>
+      </div>
 
       {/* Chat Input */}
       <div className="bg-card border-t border-border p-4">
