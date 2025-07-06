@@ -116,17 +116,19 @@ Respond as if you are continuing an existing conversation, not starting a new on
     
     // Add conversation history
     for (const msg of conversationHistory.slice(-8)) { // Last 8 messages for context
-      if (msg.type === 'user') {
+      if (msg.type === 'user' && msg.content && msg.content.trim()) {
         messages.push({ role: "user", content: msg.content });
-      } else if (msg.type === 'ai_openai') {
+      } else if (msg.type === 'ai_openai' && msg.content && msg.content.trim()) {
         messages.push({ role: "assistant", content: msg.content });
-      } else if (msg.type === 'ai_claude') {
+      } else if (msg.type === 'ai_claude' && msg.content && msg.content.trim()) {
         messages.push({ role: "user", content: `Claude AI responded: ${msg.content}` });
       }
     }
     
     // Add current message
-    messages.push({ role: "user", content: currentMessage });
+    if (currentMessage && currentMessage.trim()) {
+      messages.push({ role: "user", content: currentMessage });
+    }
     
     return messages;
   }
@@ -136,17 +138,22 @@ Respond as if you are continuing an existing conversation, not starting a new on
     
     // Add conversation history
     for (const msg of conversationHistory.slice(-8)) { // Last 8 messages for context
-      if (msg.type === 'user') {
+      if (msg.type === 'user' && msg.content && msg.content.trim()) {
         messages.push({ role: "user", content: msg.content });
-      } else if (msg.type === 'ai_claude') {
+      } else if (msg.type === 'ai_claude' && msg.content && msg.content.trim()) {
         messages.push({ role: "assistant", content: msg.content });
-      } else if (msg.type === 'ai_openai') {
+      } else if (msg.type === 'ai_openai' && msg.content && msg.content.trim()) {
         messages.push({ role: "user", content: `OpenAI responded: ${msg.content}` });
       }
     }
     
     // Add current message
-    messages.push({ role: "user", content: currentMessage });
+    if (currentMessage && currentMessage.trim()) {
+      messages.push({ role: "user", content: currentMessage });
+    }
+    
+    // Debug: Log message structure being sent to Anthropic
+    console.log('Anthropic messages:', JSON.stringify(messages, null, 2));
     
     return messages;
   }
