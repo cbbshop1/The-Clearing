@@ -117,3 +117,4 @@ This is a full-stack web application that provides a platform for human-moderate
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+User feedback: Managing multiple conversations is becoming mentally challenging - consider features to help organize and simplify conversation management.

@@ -34,15 +34,28 @@ const upload = multer({
     fileSize: 10 * 1024 * 1024, // 10MB limit
   },
   fileFilter: (req, file, cb) => {
-    // Allow images, text files, PDFs, and documents
-    const allowedTypes = /jpeg|jpg|png|gif|txt|pdf|doc|docx|md|json|csv/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
+    // Allow common file types
+    const allowedMimes = [
+      'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
+      'text/plain', 'text/csv', 'text/markdown',
+      'application/pdf',
+      'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/json',
+      'application/rtf'
+    ];
     
-    if (mimetype && extname) {
+    const allowedExtensions = [
+      '.jpg', '.jpeg', '.png', '.gif', '.webp',
+      '.txt', '.csv', '.md', '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.json', '.rtf'
+    ];
+    
+    const fileExtension = path.extname(file.originalname).toLowerCase();
+    
+    if (allowedMimes.includes(file.mimetype) || allowedExtensions.includes(fileExtension)) {
       return cb(null, true);
     } else {
-      cb(new Error('Invalid file type'));
+      cb(new Error(`File type not supported: ${file.mimetype} (${fileExtension})`));
     }
   }
 });
@@ -344,37 +357,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // File upload endpoint
-  app.post('/api/upload', upload.array('files', 5), async (req, res) => {
-    try {
-      const files = req.files as Express.Multer.File[];
-      const sessionId = req.body.sessionId;
-
-      if (!files || files.length === 0) {
-        return res.status(400).json({ message: 'No files uploaded' });
+  app.post('/api/upload', (req, res) => {
+    upload.array('files', 5)(req, res, async (err) => {
+      if (err) {
+        console.error('Multer error:', err);
+        return res.status(400).json({ message: err.message });
       }
 
-      const fileUrls: string[] = [];
-      
-      for (const file of files) {
-        // Create a unique filename
-        const timestamp = Date.now();
-        const ext = path.extname(file.originalname);
-        const filename = `${sessionId}_${timestamp}_${file.originalname}`;
-        const newPath = path.join(uploadDir, filename);
-        
-        // Move file to permanent location
-        fs.renameSync(file.path, newPath);
-        
-        // Create URL for accessing the file
-        const fileUrl = `/uploads/${filename}`;
-        fileUrls.push(fileUrl);
-      }
+      try {
+        const files = req.files as Express.Multer.File[];
+        const sessionId = req.body.sessionId;
 
-      res.json({ fileUrls });
-    } catch (error) {
-      console.error('Error uploading files:', error);
-      res.status(500).json({ message: 'File upload failed' });
-    }
+        console.log('Upload request received:', {
+          filesCount: files?.length || 0,
+          sessionId,
+          contentType: req.headers['content-type']
+        });
+
+        if (!files || files.length === 0) {
+          return res.status(400).json({ message: 'No files uploaded' });
+        }
+
+        const fileUrls: string[] = [];
+        
+        for (const file of files) {
+          console.log('Processing file:', {
+            originalname: file.originalname,
+            mimetype: file.mimetype,
+            size: file.size
+          });
+
+          // Create a unique filename
+          const timestamp = Date.now();
+          const ext = path.extname(file.originalname);
+          const filename = `${sessionId}_${timestamp}_${file.originalname}`;
+          const newPath = path.join(uploadDir, filename);
+          
+          // Move file to permanent location
+          fs.renameSync(file.path, newPath);
+          
+          // Create URL for accessing the file
+          const fileUrl = `/uploads/${filename}`;
+          fileUrls.push(fileUrl);
+        }
+
+        console.log('Upload successful:', { fileUrls });
+        res.json({ fileUrls });
+      } catch (error) {
+        console.error('Error uploading files:', error);
+        res.status(500).json({ message: 'File upload failed' });
+      }
+    });
   });
 
   // Serve uploaded files
