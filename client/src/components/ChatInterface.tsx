@@ -4,7 +4,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Smile, Send, MoreHorizontal, Paperclip, X } from "lucide-react";
-import { useWebSocket } from "@/hooks/useWebSocket";
+import { useGlobalWebSocket } from "@/hooks/useGlobalWebSocket";
 import MessageBubble from "./MessageBubble";
 import { ChatMessage } from "@shared/schema";
 
@@ -80,25 +80,25 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
     }
   }, []);
 
-  const { socket, isConnected } = useWebSocket({
+  const { socket, isConnected, send } = useGlobalWebSocket({
     onMessage: handleWebSocketMessage,
   });
 
   useEffect(() => {
-    if (socket && sessionId && userId && socket.readyState === WebSocket.OPEN) {
+    if (sessionId && userId && isConnected) {
       // First leave any existing session
-      socket.send(JSON.stringify({
+      send({
         type: 'leave_session',
-      }));
+      });
       
       // Small delay before joining new session
       setTimeout(() => {
-        if (socket.readyState === WebSocket.OPEN) {
-          socket.send(JSON.stringify({
+        if (isConnected) {
+          send({
             type: 'join_session',
             sessionId,
             userId,
-          }));
+          });
         }
       }, 50);
       
@@ -106,7 +106,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
       setForwardedMessages(new Set());
       setMessages([]); // Clear messages when switching sessions
     }
-  }, [socket, sessionId, userId]);
+  }, [sessionId, userId, isConnected, send]);
 
   useEffect(() => {
     // Scroll to bottom when new messages arrive
@@ -125,10 +125,10 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
   };
 
   const handleSendMessage = async () => {
-    if ((!currentMessage.trim() && selectedFiles.length === 0) || !socket || !sessionId || !userId) return;
+    if ((!currentMessage.trim() && selectedFiles.length === 0) || !isConnected || !sessionId || !userId) return;
     
     // Ensure WebSocket is connected before sending
-    if (socket.readyState !== WebSocket.OPEN) {
+    if (!isConnected) {
       console.log('WebSocket not ready, message not sent');
       return;
     }
@@ -161,7 +161,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
         }
       }
 
-      socket.send(JSON.stringify({
+      send({
         type: 'send_message',
         sessionId,
         userId,
@@ -169,7 +169,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
         emojiTags,
         targetModels: selectedTarget,
         files: fileUrls,
-      }));
+      });
 
       setCurrentMessage("");
       setSelectedFiles([]);
@@ -181,7 +181,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
   };
 
   const handleForwardMessage = (message: ChatMessage) => {
-    if (!socket || !sessionId || !userId) return;
+    if (!isConnected || !sessionId || !userId) return;
     
     const targetProvider = message.type === 'ai_openai' ? 'claude' : 'openai';
     const forwardContent = `[Forwarded from ${message.type === 'ai_openai' ? 'OpenAI GPT-4o' : 'Claude'}]: ${message.content}`;
@@ -190,14 +190,14 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
     setForwardedMessages(prev => new Set(prev).add(message.id));
     
     setIsLoading(true);
-    socket.send(JSON.stringify({
+    send({
       type: 'forward_message',
       sessionId,
       userId,
       content: forwardContent,
       targetProvider,
       originalMessage: message,
-    }));
+    });
   };
 
   const extractEmojis = (text: string): string[] => {
