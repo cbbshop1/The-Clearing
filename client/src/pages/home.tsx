@@ -72,6 +72,25 @@ export default function Home() {
     }
   };
 
+  const handleDeleteSession = async (sessionId: number) => {
+    try {
+      const response = await fetch(`/api/sessions/${sessionId}`, {
+        method: 'DELETE',
+      });
+      
+      if (response.ok) {
+        // If the deleted session was selected, clear selection
+        if (selectedSessionId === sessionId) {
+          setSelectedSessionId(null);
+        }
+        // Reload to refresh the session list
+        window.location.reload();
+      }
+    } catch (error) {
+      console.error('Delete failed:', error);
+    }
+  };
+
   return (
     <>
       <div className="h-screen flex overflow-hidden bg-background">
@@ -82,6 +101,7 @@ export default function Home() {
           onSessionSelect={setSelectedSessionId}
           onNewSession={handleNewSession}
           onExportSession={handleExportSession}
+          onDeleteSession={handleDeleteSession}
         />
         
         <ChatInterface

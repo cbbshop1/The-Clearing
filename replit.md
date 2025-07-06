@@ -127,6 +127,9 @@ This is a full-stack web application that provides a platform for human-moderate
 - July 06, 2025: Simplified system prompts to avoid predefining roles or platform knowledge for research purposes
 - July 06, 2025: Completely removed system prompts except for file uploads - true tabula rasa implementation
 - July 06, 2025: Eliminated old buildPrompt method that contained "Critical Guidelines" and platform context
+- July 06, 2025: Added session delete functionality with confirmation dialog and cascade delete of messages
+- July 06, 2025: Enhanced sidebar with export and delete buttons for each session
+- July 06, 2025: Improved file upload recognition with better filename display in AI prompts
 
 ## User Preferences
 

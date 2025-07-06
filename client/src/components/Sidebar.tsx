@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Settings, Plus, Download, Bot } from "lucide-react";
+import { Settings, Plus, Download, Bot, Trash2 } from "lucide-react";
 import { User, Session } from "@shared/schema";
 
 interface SidebarProps {
@@ -13,6 +13,7 @@ interface SidebarProps {
   onSessionSelect: (sessionId: number) => void;
   onNewSession: (title: string, emoji: string) => void;
   onExportSession: (sessionId: number) => void;
+  onDeleteSession: (sessionId: number) => void;
 }
 
 export default function Sidebar({
@@ -22,6 +23,7 @@ export default function Sidebar({
   onSessionSelect,
   onNewSession,
   onExportSession,
+  onDeleteSession,
 }: SidebarProps) {
   const [newSessionTitle, setNewSessionTitle] = useState("");
   const [newSessionEmoji, setNewSessionEmoji] = useState("😊");
@@ -138,14 +140,16 @@ export default function Sidebar({
               {sessions.map((session) => (
                 <div
                   key={session.id}
-                  className={`p-3 rounded-lg cursor-pointer transition-colors ${
+                  className={`p-3 rounded-lg transition-colors ${
                     selectedSessionId === session.id
                       ? "bg-primary/10 border border-primary/20"
                       : "hover:bg-muted"
                   }`}
-                  onClick={() => onSessionSelect(session.id)}
                 >
-                  <div className="flex items-center justify-between">
+                  <div 
+                    className="flex items-center justify-between cursor-pointer"
+                    onClick={() => onSessionSelect(session.id)}
+                  >
                     <div className="flex items-center space-x-2">
                       <span className="text-lg">{session.emoji}</span>
                       <span className="text-sm font-medium text-foreground">{session.title}</span>
@@ -153,6 +157,32 @@ export default function Sidebar({
                     <span className="text-xs text-muted-foreground">
                       {formatTimeAgo(session.updatedAt)}
                     </span>
+                  </div>
+                  <div className="flex items-center justify-end space-x-1 mt-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onExportSession(session.id);
+                      }}
+                      className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+                    >
+                      <Download className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (window.confirm('Are you sure you want to delete this session?')) {
+                          onDeleteSession(session.id);
+                        }
+                      }}
+                      className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
                   </div>
                 </div>
               ))}

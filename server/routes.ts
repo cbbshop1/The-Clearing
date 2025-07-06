@@ -319,6 +319,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete a session
+  app.delete('/api/sessions/:id', async (req, res) => {
+    try {
+      const sessionId = parseInt(req.params.id);
+      await storage.deleteSession(sessionId);
+      res.json({ message: 'Session deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting session:', error);
+      res.status(500).json({ message: 'Failed to delete session' });
+    }
+  });
+
   // Create new session
   app.post('/api/sessions', async (req, res) => {
     try {

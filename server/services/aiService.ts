@@ -61,14 +61,16 @@ export class AIService {
 
 
 
-  private buildSystemPrompt(emojiTags: string[], files: string[]): string {
-    // For true tabula rasa research, only include technical context when necessary
-    const fileContext = files.length > 0 
-      ? `Files uploaded: ${files.map(f => f.includes('/') ? f.split('/').pop() : f).join(', ')}`
-      : "";
-
-    // Return minimal system prompt - just file info if present
-    return fileContext || "";
+  private async buildSystemPrompt(emojiTags: string[], files: string[]): Promise<string> {
+    if (files.length === 0) return "";
+    
+    // For file uploads, provide file information
+    const fileInfos = await Promise.all(files.map(async (filePath) => {
+      const fileName = filePath.includes('/') ? filePath.split('/').pop() : filePath;
+      return `File: ${fileName}`;
+    }));
+    
+    return `Files uploaded: ${fileInfos.join(', ')}`;
   }
 
   private buildOpenAIMessages(conversationHistory: any[], currentMessage: string, systemPrompt: string): any[] {
@@ -123,7 +125,7 @@ export class AIService {
   }
 
   private async callOpenAI(message: string, conversationHistory: any[], emojiTags: string[], files: string[], model: AiModel, startTime: number): Promise<AIResponse> {
-    const systemPrompt = this.buildSystemPrompt(emojiTags, files);
+    const systemPrompt = await this.buildSystemPrompt(emojiTags, files);
     const messages = this.buildOpenAIMessages(conversationHistory, message, systemPrompt);
     
     const response = await openai.chat.completions.create({
@@ -150,7 +152,7 @@ export class AIService {
   }
 
   private async callAnthropic(message: string, conversationHistory: any[], emojiTags: string[], files: string[], model: AiModel, startTime: number): Promise<AIResponse> {
-    const systemPrompt = this.buildSystemPrompt(emojiTags, files);
+    const systemPrompt = await this.buildSystemPrompt(emojiTags, files);
     const messages = this.buildAnthropicMessages(conversationHistory, message);
     
     const apiCall: any = {
