@@ -5,6 +5,7 @@ class WebSocketManager {
   private reconnectTimeout: NodeJS.Timeout | null = null;
   private messageHandlers = new Set<(data: any) => void>();
   private connectionCallbacks = new Set<(connected: boolean) => void>();
+  private hasInitialized = false;
 
   private connect() {
     if (this.socket && this.socket.readyState === WebSocket.OPEN) {
@@ -81,10 +82,6 @@ class WebSocketManager {
 
   public addMessageHandler(handler: (data: any) => void) {
     this.messageHandlers.add(handler);
-    // Initialize connection when first handler is added
-    if (this.messageHandlers.size === 1) {
-      this.initialize();
-    }
   }
 
   public removeMessageHandler(handler: (data: any) => void) {
@@ -128,3 +125,8 @@ class WebSocketManager {
 
 // Export singleton instance
 export const websocketManager = new WebSocketManager();
+
+// Initialize the WebSocket manager immediately when the module loads
+if (typeof window !== 'undefined') {
+  websocketManager.initialize();
+}
