@@ -40,17 +40,31 @@ export interface AIResponse {
 export class AIService {
   private async readFileContent(filePath: string): Promise<string | null> {
     try {
-      const fullPath = path.join(process.cwd(), filePath);
+      // Remove leading slash if present since we're joining with process.cwd()
+      const cleanPath = filePath.startsWith('/') ? filePath.slice(1) : filePath;
+      const fullPath = path.join(process.cwd(), cleanPath);
+      console.log('Attempting to read file:', fullPath);
+      console.log('Original file path:', filePath);
+      
+      // Check if file exists
+      if (!fs.existsSync(fullPath)) {
+        console.log('File does not exist:', fullPath);
+        return null;
+      }
+      
       const extension = path.extname(filePath).toLowerCase();
+      console.log('File extension:', extension);
       
       // Only read text-based files
-      const textExtensions = ['.txt', '.md', '.json', '.csv', '.log', '.js', '.ts', '.html', '.css', '.xml', '.yaml', '.yml'];
+      const textExtensions = ['.txt', '.md', '.json', '.csv', '.log', '.js', '.ts', '.html', '.css', '.xml', '.yaml', '.yml', '.py', '.java', '.cpp', '.c', '.h', '.php', '.rb', '.go', '.rs', '.swift', '.kt', '.scala', '.sh', '.bat', '.ps1', '.sql', '.r', '.m', '.pl', '.lua', '.dart', '.vue', '.jsx', '.tsx', '.scss', '.sass', '.less', '.ini', '.cfg', '.conf', '.tex', '.bib', '.rtf'];
       
       if (!textExtensions.includes(extension)) {
+        console.log('Not a text file extension:', extension);
         return null; // Not a text file
       }
       
       const content = fs.readFileSync(fullPath, 'utf-8');
+      console.log('Successfully read file content, length:', content.length);
       
       return content;
     } catch (error) {
@@ -92,6 +106,9 @@ export class AIService {
   private buildSystemPrompt(emojiTags: string[], files: string[], allFileContents: (string | null)[] = []): string {
     if (files.length === 0) return "";
     
+    console.log('Building system prompt with files:', files);
+    console.log('File contents available:', allFileContents.map(content => content ? `${content.length} chars` : 'null'));
+    
     // For file uploads, provide file information and content
     const fileInfos = files.map((filePath, index) => {
       const fileName = filePath.includes('/') ? filePath.split('/').pop() : filePath;
@@ -104,7 +121,10 @@ export class AIService {
       }
     });
     
-    return `Files uploaded:\n${fileInfos.join('\n\n')}`;
+    const systemPrompt = `Files uploaded:\n${fileInfos.join('\n\n')}`;
+    console.log('Generated system prompt length:', systemPrompt.length);
+    
+    return systemPrompt;
   }
 
   private buildOpenAIMessages(conversationHistory: any[], currentMessage: string, systemPrompt: string): any[] {

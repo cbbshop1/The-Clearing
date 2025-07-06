@@ -1,0 +1,7 @@
+This is a test file to check if the AI models can read file content properly. 
+
+The file contains multiple lines of text that should be visible to both OpenAI and Claude models when uploaded.
+
+Line 1: Testing file content reading
+Line 2: This should be readable by AI models
+Line 3: End of test content
