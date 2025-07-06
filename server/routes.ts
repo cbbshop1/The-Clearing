@@ -119,11 +119,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { sessionId, content, emojiTags, userId, targetModels = 'both', files = [] } = data;
       
+      // Enhance content with file information if files are present
+      const enhancedContent = files && files.length > 0 
+        ? `${content}\n\n[FILES UPLOADED: ${files.map((f: string) => f.includes('/') ? f.split('/').pop() : f).join(', ')}]`
+        : content;
+
       // Create user message
       const userMessage = await storage.createMessage({
         sessionId,
         userId,
-        content,
+        content: enhancedContent,
         type: 'user',
         emojiTags: emojiTags || [],
         files: files || [],
@@ -160,7 +165,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (const model of filteredModels) {
         try {
           const aiResponse = await aiService.generateResponse(
-            content,
+            enhancedContent,
             conversationHistory,
             emojiTags || [],
             model,

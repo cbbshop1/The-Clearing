@@ -93,7 +93,7 @@ Respond as if you are continuing an existing conversation, not starting a new on
       : "";
 
     const fileContext = files.length > 0 
-      ? `\n\nAttached files: ${files.length} file(s) have been shared. Please analyze and discuss the content of these files in your response.`
+      ? `\n\nATTENTION: ${files.length} file(s) have been uploaded by the user: ${files.map(f => f.includes('/') ? f.split('/').pop() : f).join(', ')}. IMPORTANT: You must acknowledge these files and discuss their content in your response. The user has specifically shared these files for analysis.`
       : "";
 
     return `You are participating in "The Clearing Collective" - a platform for human-moderated conversations between multiple AI models. Your role is to provide thoughtful, balanced perspectives that contribute to a collaborative dialogue.
@@ -152,8 +152,7 @@ Respond as if you are continuing an existing conversation, not starting a new on
       messages.push({ role: "user", content: currentMessage });
     }
     
-    // Debug: Log message structure being sent to Anthropic
-    console.log('Anthropic messages:', JSON.stringify(messages, null, 2));
+
     
     return messages;
   }
@@ -196,7 +195,7 @@ Respond as if you are continuing an existing conversation, not starting a new on
       messages,
     });
 
-    const content = response.content[0].type === "text" ? response.content[0].text : "";
+    const content = response.content && response.content[0] && response.content[0].type === "text" ? response.content[0].text : "";
     const responseTime = Date.now() - startTime;
     
     return {
