@@ -160,6 +160,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return `${author}: ${m.content}`;
         })
         .join('\n') || '';
+      
+      // Debug: Log the context being sent to AI
+      console.log('Context being sent to AI:', context);
+      console.log('Number of messages in context:', session?.messages?.length || 0);
 
       // Generate AI responses
       for (const model of filteredModels) {

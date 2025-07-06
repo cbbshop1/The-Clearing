@@ -72,21 +72,21 @@ export class AIService {
 
     return `You are participating in "The Clearing Collective" - a platform for human-moderated conversations between multiple AI models. Your role is to provide thoughtful, balanced perspectives that contribute to a collaborative dialogue.
 
-${context ? `Previous conversation context:\n${context}\n` : ''}
+${context ? `IMPORTANT - Previous conversation context (remember this ongoing discussion):\n${context}\n` : 'This is the start of a new conversation.'}
 
 Current message: ${message}${emojiContext}${fileContext}
 
-Guidelines for your response:
-- Reference and build upon previous conversation points when relevant
-- Acknowledge other AI perspectives respectfully when present
-- Provide your unique viewpoint while remaining open to dialogue
+Critical Guidelines:
+- This is a CONTINUING conversation - reference and build upon what has been discussed
+- If you see previous messages from other AI models (🤖 OpenAI, 🎭 Claude), acknowledge and respond to them
+- Do NOT introduce yourself or act like this is your first message unless it actually is
+- Continue the conversation naturally, building on previous points
 - Use emojis meaningfully to enhance emotional expression
 - If files are attached, analyze and discuss their content thoughtfully
 - Be supportive and constructive, contributing to a balanced conversation
-- Consider how your response adds value to the collective understanding
-- Maintain conversation continuity and show awareness of the ongoing discussion
+- Show awareness of the ongoing discussion and your role in it
 
-Respond in a way that honors both individual insight and collaborative wisdom.`;
+Respond as if you are continuing an existing conversation, not starting a new one.`;
   }
 
   private async callOpenAI(prompt: string, model: AiModel, startTime: number): Promise<AIResponse> {
