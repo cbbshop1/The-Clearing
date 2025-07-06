@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from "react";
+import { useState, useEffect, useRef, forwardRef, useImperativeHandle, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -56,30 +56,32 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
     handleEmojiSelect
   }));
 
+  const handleWebSocketMessage = useCallback((data: any) => {
+    switch (data.type) {
+      case 'session_history':
+        setMessages(data.messages);
+        setIsLoading(false);
+        break;
+      case 'new_message':
+        setMessages(prev => [...prev, data.message]);
+        // Only stop loading if it's an AI message (response completed)
+        if (data.message.type.startsWith('ai_')) {
+          setIsLoading(false);
+        }
+        break;
+      case 'ai_error':
+        console.error('AI Error:', data.error);
+        setIsLoading(false);
+        break;
+      case 'error':
+        console.error('WebSocket Error:', data.message);
+        setIsLoading(false);
+        break;
+    }
+  }, []);
+
   const { socket, isConnected } = useWebSocket({
-    onMessage: (data) => {
-      switch (data.type) {
-        case 'session_history':
-          setMessages(data.messages);
-          setIsLoading(false);
-          break;
-        case 'new_message':
-          setMessages(prev => [...prev, data.message]);
-          // Only stop loading if it's an AI message (response completed)
-          if (data.message.type.startsWith('ai_')) {
-            setIsLoading(false);
-          }
-          break;
-        case 'ai_error':
-          console.error('AI Error:', data.error);
-          setIsLoading(false);
-          break;
-        case 'error':
-          console.error('WebSocket Error:', data.message);
-          setIsLoading(false);
-          break;
-      }
-    },
+    onMessage: handleWebSocketMessage,
   });
 
   useEffect(() => {
