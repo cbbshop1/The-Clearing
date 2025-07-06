@@ -4,7 +4,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Smile, Send, MoreHorizontal, Paperclip, X } from "lucide-react";
-import { useWebSocketManager } from "@/hooks/useWebSocketManager";
+import { websocketManager } from "@/lib/websocketManager";
 import MessageBubble from "./MessageBubble";
 import { ChatMessage } from "@shared/schema";
 
@@ -80,9 +80,26 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
     }
   }, []);
 
-  const { isConnected, send } = useWebSocketManager({
-    onMessage: handleWebSocketMessage,
-  });
+  const [isConnected, setIsConnected] = useState(false);
+
+  // Direct WebSocket manager integration
+  useEffect(() => {
+    const connectionCallback = (connected: boolean) => {
+      setIsConnected(connected);
+    };
+
+    websocketManager.addMessageHandler(handleWebSocketMessage);
+    websocketManager.addConnectionCallback(connectionCallback);
+
+    return () => {
+      websocketManager.removeMessageHandler(handleWebSocketMessage);
+      websocketManager.removeConnectionCallback(connectionCallback);
+    };
+  }, [handleWebSocketMessage]);
+
+  const send = useCallback((data: any) => {
+    websocketManager.send(data);
+  }, []);
 
   useEffect(() => {
     if (sessionId && userId && isConnected) {
