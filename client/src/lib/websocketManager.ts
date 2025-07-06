@@ -1,3 +1,7 @@
+// Global flag to prevent multiple WebSocket instances
+let globalWebSocketInstance: WebSocket | null = null;
+let globalConnectionCount = 0;
+
 // Singleton WebSocket manager to prevent multiple connections
 class WebSocketManager {
   private socket: WebSocket | null = null;
@@ -8,6 +12,12 @@ class WebSocketManager {
   private hasInitialized = false;
 
   private connect() {
+    // Check if we already have a global connection
+    if (globalWebSocketInstance && globalWebSocketInstance.readyState === WebSocket.OPEN) {
+      this.socket = globalWebSocketInstance;
+      return;
+    }
+
     if (this.socket && this.socket.readyState === WebSocket.OPEN) {
       return;
     }
@@ -16,13 +26,21 @@ class WebSocketManager {
       return;
     }
 
+    // Prevent multiple connections globally
+    if (globalConnectionCount > 0) {
+      console.warn('WebSocket connection attempt blocked - connection already exists');
+      return;
+    }
+
     this.isConnecting = true;
+    globalConnectionCount++;
     console.log('Creating WebSocket connection...');
 
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const wsUrl = `${protocol}//${window.location.host}/ws`;
     
     this.socket = new WebSocket(wsUrl);
+    globalWebSocketInstance = this.socket;
 
     this.socket.onopen = () => {
       console.log('WebSocket connected');
@@ -48,6 +66,7 @@ class WebSocketManager {
     this.socket.onerror = (error) => {
       console.error('WebSocket error:', error);
       this.isConnecting = false;
+      globalConnectionCount = 0;
       this.notifyConnectionChange(false);
     };
 
@@ -55,6 +74,8 @@ class WebSocketManager {
       console.log('WebSocket disconnected');
       this.isConnecting = false;
       this.socket = null;
+      globalWebSocketInstance = null;
+      globalConnectionCount = 0;
       this.notifyConnectionChange(false);
       
       // Reconnect after 3 seconds
