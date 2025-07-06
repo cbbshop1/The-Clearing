@@ -12,7 +12,7 @@ export default function Home() {
   const chatInterfaceRef = useRef<{ handleEmojiSelect: (emoji: string) => void } | null>(null);
   
   // Get moderator user
-  const { data: moderator } = useQuery({
+  const { data: moderator, isLoading: moderatorLoading } = useQuery({
     queryKey: ['/api/moderator'],
   });
 
@@ -131,12 +131,18 @@ export default function Home() {
         
         {/* Main Chat Area - Takes up most space */}
         <div className="flex-1 min-w-0">
-          <ChatInterface
-            ref={chatInterfaceRef}
-            sessionId={selectedSessionId}
-            userId={moderator?.id}
-            onOpenEmojiLexicon={() => setIsEmojiLexiconOpen(true)}
-          />
+          {moderatorLoading ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-gray-500">Loading...</div>
+            </div>
+          ) : (
+            <ChatInterface
+              ref={chatInterfaceRef}
+              sessionId={selectedSessionId}
+              userId={moderator?.id}
+              onOpenEmojiLexicon={() => setIsEmojiLexiconOpen(true)}
+            />
+          )}
         </div>
         
         {/* Right Panel - Slimmer */}
