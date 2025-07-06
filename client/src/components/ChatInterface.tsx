@@ -57,16 +57,24 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
   }));
 
   const handleWebSocketMessage = useCallback((data: any) => {
+    console.log('Received WebSocket message:', data.type);
+    
+    // Use a more stable state update pattern
     switch (data.type) {
       case 'session_history':
-        setMessages(data.messages);
+        setMessages(data.messages || []);
         setIsLoading(false);
         break;
       case 'new_message':
-        setMessages(prev => [...prev, data.message]);
-        // Only stop loading if it's an AI message (response completed)
-        if (data.message.type.startsWith('ai_')) {
-          setIsLoading(false);
+        if (data.message) {
+          setMessages(prev => {
+            const newMessages = [...prev, data.message];
+            return newMessages;
+          });
+          // Only stop loading if it's an AI message (response completed)
+          if (data.message.type.startsWith('ai_')) {
+            setIsLoading(false);
+          }
         }
         break;
       case 'ai_error':
@@ -298,7 +306,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
                       <div className="text-xs font-medium text-muted-foreground mb-2 sticky top-0 bg-background z-10 pb-1 border-b">
                         {message.type === 'ai_openai' ? '🤖 OpenAI GPT-4o' : '🎭 Claude'}
                       </div>
-                      <div className="max-h-80 overflow-y-auto pr-2 space-y-2 animate-in slide-in-from-left-3 duration-500">
+                      <div className="max-h-80 overflow-y-auto pr-2 space-y-2">
                         <MessageBubble 
                           message={message} 
                           onForward={handleForwardMessage} 
@@ -310,7 +318,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
                       <div className="text-xs font-medium text-muted-foreground mb-2 sticky top-0 bg-background z-10 pb-1 border-b">
                         {nextMessage.type === 'ai_openai' ? '🤖 OpenAI GPT-4o' : '🎭 Claude'}
                       </div>
-                      <div className="max-h-80 overflow-y-auto pr-2 space-y-2 animate-in slide-in-from-right-3 duration-500">
+                      <div className="max-h-80 overflow-y-auto pr-2 space-y-2">
                         <MessageBubble 
                           message={nextMessage} 
                           onForward={handleForwardMessage} 
