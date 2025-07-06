@@ -12,23 +12,19 @@ export default function Home() {
   const chatInterfaceRef = useRef<{ handleEmojiSelect: (emoji: string) => void } | null>(null);
   
   // Get moderator user
-  const { data: moderator, isLoading: moderatorLoading } = useQuery({
+  const { data: moderator } = useQuery({
     queryKey: ['/api/moderator'],
   });
 
   // Get user sessions (using moderator ID for demo)
   const { data: sessions = [] } = useQuery({
-    queryKey: ['/api/sessions', moderator?.id],
+    queryKey: ['/api/sessions'],
     queryFn: async () => {
-      if (!moderator?.id) {
-        throw new Error('No moderator ID available');
-      }
-      const response = await fetch(`/api/sessions?userId=${moderator.id}`);
+      const response = await fetch(`/api/sessions?userId=${moderator?.id}`);
       if (!response.ok) throw new Error('Failed to fetch sessions');
       return response.json();
     },
     enabled: !!moderator?.id,
-    retry: false, // Disable retries to prevent excessive requests
   });
 
   // Get active AI models
@@ -76,79 +72,26 @@ export default function Home() {
     }
   };
 
-  const handleDeleteSession = async (sessionId: number) => {
-    try {
-      const response = await fetch(`/api/sessions/${sessionId}`, {
-        method: 'DELETE',
-      });
-      
-      if (response.ok) {
-        // If we're deleting the currently selected session, clear the selection
-        if (selectedSessionId === sessionId) {
-          setSelectedSessionId(null);
-        }
-        // Refetch sessions to update the list
-        window.location.reload();
-      }
-    } catch (error) {
-      console.error('Delete failed:', error);
-    }
-  };
-
-  const handleUpdateSession = async (sessionId: number, title: string, emoji: string) => {
-    try {
-      const response = await fetch(`/api/sessions/${sessionId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, emoji }),
-      });
-      
-      if (response.ok) {
-        // Refetch sessions to update the list
-        window.location.reload();
-      }
-    } catch (error) {
-      console.error('Update failed:', error);
-    }
-  };
-
   return (
     <>
       <div className="h-screen flex overflow-hidden bg-background">
-        {/* Left Sidebar - Slimmer */}
-        <div className="w-64 flex-shrink-0">
-          <Sidebar
-            moderator={moderator}
-            sessions={sessions}
-            selectedSessionId={selectedSessionId}
-            onSessionSelect={setSelectedSessionId}
-            onNewSession={handleNewSession}
-            onExportSession={handleExportSession}
-            onDeleteSession={handleDeleteSession}
-            onUpdateSession={handleUpdateSession}
-          />
-        </div>
+        <Sidebar
+          moderator={moderator}
+          sessions={sessions}
+          selectedSessionId={selectedSessionId}
+          onSessionSelect={setSelectedSessionId}
+          onNewSession={handleNewSession}
+          onExportSession={handleExportSession}
+        />
         
-        {/* Main Chat Area - Takes up most space */}
-        <div className="flex-1 min-w-0">
-          {moderatorLoading ? (
-            <div className="flex items-center justify-center h-full">
-              <div className="text-gray-500">Loading...</div>
-            </div>
-          ) : (
-            <ChatInterface
-              ref={chatInterfaceRef}
-              sessionId={selectedSessionId}
-              userId={moderator?.id}
-              onOpenEmojiLexicon={() => setIsEmojiLexiconOpen(true)}
-            />
-          )}
-        </div>
+        <ChatInterface
+          ref={chatInterfaceRef}
+          sessionId={selectedSessionId}
+          userId={moderator?.id}
+          onOpenEmojiLexicon={() => setIsEmojiLexiconOpen(true)}
+        />
         
-        {/* Right Panel - Slimmer */}
-        <div className="w-64 flex-shrink-0">
-          <ModelPanel aiModels={aiModels} />
-        </div>
+        <ModelPanel aiModels={aiModels} />
       </div>
       
       <EmojiLexicon

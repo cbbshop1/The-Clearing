@@ -14,7 +14,6 @@ export function useWebSocket({ onMessage, onError, onClose }: UseWebSocketProps)
   const onMessageRef = useRef(onMessage);
   const onErrorRef = useRef(onError);
   const onCloseRef = useRef(onClose);
-  const isConnectingRef = useRef(false);
 
   // Update refs when callbacks change
   onMessageRef.current = onMessage;
@@ -25,11 +24,10 @@ export function useWebSocket({ onMessage, onError, onClose }: UseWebSocketProps)
     const connect = () => {
       const now = Date.now();
       // Prevent connection attempts more than once per second
-      if (now - lastConnectAttempt.current < 1000 || isConnectingRef.current) {
+      if (now - lastConnectAttempt.current < 1000) {
         return;
       }
       lastConnectAttempt.current = now;
-      isConnectingRef.current = true;
       
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
       const wsUrl = `${protocol}//${window.location.host}/ws`;
@@ -40,7 +38,6 @@ export function useWebSocket({ onMessage, onError, onClose }: UseWebSocketProps)
         console.log('WebSocket connected');
         setIsConnected(true);
         setSocket(ws);
-        isConnectingRef.current = false;
       };
       
       ws.onmessage = (event) => {
@@ -56,7 +53,6 @@ export function useWebSocket({ onMessage, onError, onClose }: UseWebSocketProps)
         console.error('WebSocket error:', error);
         onErrorRef.current?.(error);
         setIsConnected(false);
-        isConnectingRef.current = false;
       };
       
       ws.onclose = () => {
@@ -64,7 +60,6 @@ export function useWebSocket({ onMessage, onError, onClose }: UseWebSocketProps)
         setIsConnected(false);
         setSocket(null);
         onCloseRef.current?.();
-        isConnectingRef.current = false;
         
         // Reconnect after 3 seconds
         reconnectTimeoutRef.current = setTimeout(() => {

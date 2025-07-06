@@ -26,7 +26,6 @@ export interface IStorage {
   getSession(id: number): Promise<SessionWithMessages | undefined>;
   createSession(session: InsertSession): Promise<Session>;
   updateSession(id: number, updates: Partial<InsertSession>): Promise<Session>;
-  deleteSession(id: number): Promise<void>;
   
   // Message operations
   getMessages(sessionId: number): Promise<ChatMessage[]>;
@@ -151,20 +150,6 @@ export class MemStorage implements IStorage {
     };
     this.sessions.set(id, updatedSession);
     return updatedSession;
-  }
-
-  async deleteSession(id: number): Promise<void> {
-    // Delete the session
-    this.sessions.delete(id);
-    
-    // Delete all messages associated with this session
-    const messagesToDelete = Array.from(this.messages.entries())
-      .filter(([_, message]) => message.sessionId === id)
-      .map(([messageId, _]) => messageId);
-    
-    messagesToDelete.forEach(messageId => {
-      this.messages.delete(messageId);
-    });
   }
 
   async getMessages(sessionId: number): Promise<ChatMessage[]> {

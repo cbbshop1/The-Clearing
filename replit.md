@@ -113,14 +113,7 @@ This is a full-stack web application that provides a platform for human-moderate
 - July 06, 2025: Implemented file upload functionality with support for images, documents, and text files
 - July 06, 2025: Added file display in message bubbles with preview for images and download buttons
 - July 06, 2025: Enhanced AI prompts to analyze and discuss uploaded file content
-- July 06, 2025: Redesigned layout with slimmer side panels (256px each) and expanded conversation area
-- July 06, 2025: Moved choice buttons below input field to avoid interference with popup bars
-- July 06, 2025: Compacted sidebar and model panel components for better screen space utilization
-- July 06, 2025: Fixed session switching freeze by improving WebSocket connection cleanup and message handling
-- July 06, 2025: Added ability to delete and edit chat sessions with inline editing and confirmation dialogs
-- July 06, 2025: Improved AI response processing to prevent race conditions and WebSocket overflow
 
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
-User feedback: Managing multiple conversations is becoming mentally challenging - consider features to help organize and simplify conversation management.

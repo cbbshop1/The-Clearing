@@ -34,28 +34,15 @@ const upload = multer({
     fileSize: 10 * 1024 * 1024, // 10MB limit
   },
   fileFilter: (req, file, cb) => {
-    // Allow common file types
-    const allowedMimes = [
-      'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
-      'text/plain', 'text/csv', 'text/markdown',
-      'application/pdf',
-      'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'application/json',
-      'application/rtf'
-    ];
+    // Allow images, text files, PDFs, and documents
+    const allowedTypes = /jpeg|jpg|png|gif|txt|pdf|doc|docx|md|json|csv/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
     
-    const allowedExtensions = [
-      '.jpg', '.jpeg', '.png', '.gif', '.webp',
-      '.txt', '.csv', '.md', '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.json', '.rtf'
-    ];
-    
-    const fileExtension = path.extname(file.originalname).toLowerCase();
-    
-    if (allowedMimes.includes(file.mimetype) || allowedExtensions.includes(fileExtension)) {
+    if (mimetype && extname) {
       return cb(null, true);
     } else {
-      cb(new Error(`File type not supported: ${file.mimetype} (${fileExtension})`));
+      cb(new Error('Invalid file type'));
     }
   }
 });
@@ -79,18 +66,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         switch (data.type) {
           case 'join_session':
-            // First, remove from any existing session
-            if (ws.sessionId) {
-              const oldSessionClients = clients.get(ws.sessionId);
-              if (oldSessionClients) {
-                const index = oldSessionClients.indexOf(ws);
-                if (index > -1) {
-                  oldSessionClients.splice(index, 1);
-                }
-              }
-            }
-            
-            // Now join the new session
             ws.userId = data.userId;
             ws.sessionId = data.sessionId;
             
@@ -114,19 +89,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             break;
           case 'forward_message':
             await handleForwardMessage(data, ws);
-            break;
-          case 'leave_session':
-            if (ws.sessionId) {
-              const sessionClients = clients.get(ws.sessionId);
-              if (sessionClients) {
-                const index = sessionClients.indexOf(ws);
-                if (index > -1) {
-                  sessionClients.splice(index, 1);
-                }
-              }
-              ws.sessionId = undefined;
-              ws.userId = undefined;
-            }
             break;
         }
       } catch (error) {
@@ -193,11 +155,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .map(m => `${m.type}: ${m.content}`)
         .join('\n') || '';
 
-      // Generate AI responses sequentially to avoid race conditions
+      // Generate AI responses
       for (const model of filteredModels) {
         try {
-          console.log(`Generating AI response from ${model.name} for session ${sessionId}`);
-          
           const aiResponse = await aiService.generateResponse(
             content,
             context,
@@ -218,8 +178,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             metadata: aiResponse.metadata,
           });
 
-          console.log(`Broadcasting AI message from ${model.name} to session ${sessionId}`);
-          
           // Broadcast AI message to all clients in session
           broadcastToSession(sessionId, {
             type: 'new_message',
@@ -228,11 +186,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
               timestamp: aiMessage.createdAt || new Date(),
             },
           });
-          
-          // Small delay between models to prevent overwhelming the client
-          if (filteredModels.length > 1) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-          }
         } catch (error) {
           console.error(`Error generating response from ${model.name}:`, error);
           
@@ -368,32 +321,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Update session
-  app.put('/api/sessions/:id', async (req, res) => {
-    try {
-      const sessionId = parseInt(req.params.id);
-      const updates = req.body;
-      
-      const session = await storage.updateSession(sessionId, updates);
-      res.json(session);
-    } catch (error) {
-      console.error('Error updating session:', error);
-      res.status(400).json({ message: 'Failed to update session' });
-    }
-  });
-
-  // Delete session
-  app.delete('/api/sessions/:id', async (req, res) => {
-    try {
-      const sessionId = parseInt(req.params.id);
-      await storage.deleteSession(sessionId);
-      res.json({ message: 'Session deleted successfully' });
-    } catch (error) {
-      console.error('Error deleting session:', error);
-      res.status(500).json({ message: 'Failed to delete session' });
-    }
-  });
-
   // Get active AI models
   app.get('/api/models', async (req, res) => {
     try {
@@ -417,57 +344,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // File upload endpoint
-  app.post('/api/upload', (req, res) => {
-    upload.array('files', 5)(req, res, async (err) => {
-      if (err) {
-        console.error('Multer error:', err);
-        return res.status(400).json({ message: err.message });
+  app.post('/api/upload', upload.array('files', 5), async (req, res) => {
+    try {
+      const files = req.files as Express.Multer.File[];
+      const sessionId = req.body.sessionId;
+
+      if (!files || files.length === 0) {
+        return res.status(400).json({ message: 'No files uploaded' });
       }
 
-      try {
-        const files = req.files as Express.Multer.File[];
-        const sessionId = req.body.sessionId;
-
-        console.log('Upload request received:', {
-          filesCount: files?.length || 0,
-          sessionId,
-          contentType: req.headers['content-type']
-        });
-
-        if (!files || files.length === 0) {
-          return res.status(400).json({ message: 'No files uploaded' });
-        }
-
-        const fileUrls: string[] = [];
+      const fileUrls: string[] = [];
+      
+      for (const file of files) {
+        // Create a unique filename
+        const timestamp = Date.now();
+        const ext = path.extname(file.originalname);
+        const filename = `${sessionId}_${timestamp}_${file.originalname}`;
+        const newPath = path.join(uploadDir, filename);
         
-        for (const file of files) {
-          console.log('Processing file:', {
-            originalname: file.originalname,
-            mimetype: file.mimetype,
-            size: file.size
-          });
-
-          // Create a unique filename
-          const timestamp = Date.now();
-          const ext = path.extname(file.originalname);
-          const filename = `${sessionId}_${timestamp}_${file.originalname}`;
-          const newPath = path.join(uploadDir, filename);
-          
-          // Move file to permanent location
-          fs.renameSync(file.path, newPath);
-          
-          // Create URL for accessing the file
-          const fileUrl = `/uploads/${filename}`;
-          fileUrls.push(fileUrl);
-        }
-
-        console.log('Upload successful:', { fileUrls });
-        res.json({ fileUrls });
-      } catch (error) {
-        console.error('Error uploading files:', error);
-        res.status(500).json({ message: 'File upload failed' });
+        // Move file to permanent location
+        fs.renameSync(file.path, newPath);
+        
+        // Create URL for accessing the file
+        const fileUrl = `/uploads/${filename}`;
+        fileUrls.push(fileUrl);
       }
-    });
+
+      res.json({ fileUrls });
+    } catch (error) {
+      console.error('Error uploading files:', error);
+      res.status(500).json({ message: 'File upload failed' });
+    }
   });
 
   // Serve uploaded files

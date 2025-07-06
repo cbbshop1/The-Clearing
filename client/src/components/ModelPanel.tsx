@@ -24,81 +24,108 @@ export default function ModelPanel({ aiModels }: ModelPanelProps) {
     }
   };
 
-  const getStatusColor = (isActive: boolean | null) => {
+  const getStatusColor = (isActive: boolean) => {
     return isActive ? "bg-green-500" : "bg-muted-foreground";
   };
 
   return (
-    <div className="h-full bg-card border-l border-border flex flex-col">
-      {/* Model Panel Header - Compact */}
-      <div className="p-3 border-b border-border">
-        <h3 className="text-sm font-semibold text-foreground">AI Models</h3>
-        <p className="text-xs text-muted-foreground">Response Management</p>
+    <div className="w-80 bg-card border-l border-border flex flex-col">
+      {/* Model Panel Header */}
+      <div className="p-4 border-b border-border">
+        <h3 className="text-lg font-semibold text-foreground">AI Models</h3>
+        <p className="text-sm text-muted-foreground">Managing conversation responses</p>
       </div>
 
       {/* Active Models */}
       <ScrollArea className="flex-1">
-        <div className="p-2 space-y-2">
+        <div className="p-4 space-y-3">
           {aiModels.map((model) => (
             <div
               key={model.id}
-              className={`border rounded p-2 ${getModelColor(model.provider)}`}
+              className={`border rounded-lg p-3 ${getModelColor(model.provider)}`}
             >
-              <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center space-x-2">
-                  <div className={`w-2 h-2 rounded-full ${getStatusColor(model.isActive)}`}></div>
-                  <span className="text-xs font-medium text-foreground truncate">{model.name}</span>
+                  <div className={`w-3 h-3 rounded-full ${getStatusColor(model.isActive)}`}></div>
+                  <span className="text-sm font-medium text-foreground">{model.name}</span>
                 </div>
-                <Button variant="ghost" size="icon" className="h-5 w-5">
-                  <Settings className="h-2 w-2" />
+                <Button variant="ghost" size="icon" className="h-6 w-6">
+                  <Settings className="h-3 w-3" />
                 </Button>
               </div>
-              <div className="space-y-0.5">
+              <div className="space-y-1">
                 <p className="text-xs text-muted-foreground">
-                  {model.provider} • {getModelStatus(model)}
+                  Provider: {model.provider}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Status: {getModelStatus(model)}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Model: {model.model}
                 </p>
               </div>
             </div>
           ))}
 
+          {/* Add New Model Placeholder */}
+          <div className="bg-muted border border-border rounded-lg p-3">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-muted-foreground rounded-full"></div>
+                <span className="text-sm font-medium text-muted-foreground">Google Bard</span>
+              </div>
+              <Button variant="ghost" size="icon" className="h-6 w-6">
+                <Plus className="h-3 w-3" />
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">Status: Available</p>
+          </div>
         </div>
       </ScrollArea>
 
-      {/* Model Comparison - Compact */}
-      <div className="p-2 border-t border-border">
-        <h4 className="text-xs font-medium text-foreground mb-2">Response Metrics</h4>
-        <div className="space-y-1">
+      {/* Model Comparison */}
+      <div className="p-4 border-t border-border">
+        <h4 className="text-sm font-medium text-foreground mb-3">Response Comparison</h4>
+        <div className="space-y-2">
           <div className="flex items-center justify-between text-xs">
-            <span className="text-muted-foreground">Empathy</span>
+            <span className="text-muted-foreground">Empathy Score</span>
             <div className="flex space-x-1">
-              <span className="text-green-600">8.5</span>
-              <span className="text-blue-600">9.2</span>
+              <span className="text-green-600">GPT-4: 8.5</span>
+              <span className="text-blue-600">Claude: 9.2</span>
             </div>
           </div>
           <div className="flex items-center justify-between text-xs">
             <span className="text-muted-foreground">Relevance</span>
             <div className="flex space-x-1">
-              <span className="text-green-600">9.1</span>
-              <span className="text-blue-600">8.7</span>
+              <span className="text-green-600">GPT-4: 9.1</span>
+              <span className="text-blue-600">Claude: 8.7</span>
+            </div>
+          </div>
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-muted-foreground">Emoji Usage</span>
+            <div className="flex space-x-1">
+              <span className="text-green-600">GPT-4: 6</span>
+              <span className="text-blue-600">Claude: 4</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Quick Actions - Compact */}
-      <div className="p-2 border-t border-border">
-        <div className="space-y-1">
-          <Button variant="ghost" className="w-full justify-start h-6 px-2 text-xs">
-            <RefreshCw className="h-3 w-3 mr-1" />
-            Refresh
+      {/* Quick Actions */}
+      <div className="p-4 border-t border-border">
+        <h4 className="text-sm font-medium text-foreground mb-3">Quick Actions</h4>
+        <div className="space-y-2">
+          <Button variant="ghost" className="w-full justify-start h-8 px-3">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh All Models
           </Button>
-          <Button variant="ghost" className="w-full justify-start h-6 px-2 text-xs">
-            <Scale className="h-3 w-3 mr-1" />
-            Compare
+          <Button variant="ghost" className="w-full justify-start h-8 px-3">
+            <Scale className="h-4 w-4 mr-2" />
+            Compare Responses
           </Button>
-          <Button variant="ghost" className="w-full justify-start h-6 px-2 text-xs">
-            <TrendingUp className="h-3 w-3 mr-1" />
-            Analytics
+          <Button variant="ghost" className="w-full justify-start h-8 px-3">
+            <TrendingUp className="h-4 w-4 mr-2" />
+            View Analytics
           </Button>
         </div>
       </div>

@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Settings, Plus, Download, Bot, Edit, Trash2, Check, X } from "lucide-react";
+import { Settings, Plus, Download, Bot } from "lucide-react";
 import { User, Session } from "@shared/schema";
 
 interface SidebarProps {
@@ -13,8 +13,6 @@ interface SidebarProps {
   onSessionSelect: (sessionId: number) => void;
   onNewSession: (title: string, emoji: string) => void;
   onExportSession: (sessionId: number) => void;
-  onDeleteSession: (sessionId: number) => void;
-  onUpdateSession: (sessionId: number, title: string, emoji: string) => void;
 }
 
 export default function Sidebar({
@@ -24,15 +22,10 @@ export default function Sidebar({
   onSessionSelect,
   onNewSession,
   onExportSession,
-  onDeleteSession,
-  onUpdateSession,
 }: SidebarProps) {
   const [newSessionTitle, setNewSessionTitle] = useState("");
   const [newSessionEmoji, setNewSessionEmoji] = useState("😊");
   const [isNewSessionOpen, setIsNewSessionOpen] = useState(false);
-  const [editingSessionId, setEditingSessionId] = useState<number | null>(null);
-  const [editTitle, setEditTitle] = useState("");
-  const [editEmoji, setEditEmoji] = useState("😊");
 
   const handleCreateSession = () => {
     if (newSessionTitle.trim()) {
@@ -40,33 +33,6 @@ export default function Sidebar({
       setNewSessionTitle("");
       setNewSessionEmoji("😊");
       setIsNewSessionOpen(false);
-    }
-  };
-
-  const handleEditSession = (sessionId: number, currentTitle: string, currentEmoji: string | null) => {
-    setEditingSessionId(sessionId);
-    setEditTitle(currentTitle);
-    setEditEmoji(currentEmoji || "😊");
-  };
-
-  const handleSaveEdit = () => {
-    if (editingSessionId && editTitle.trim()) {
-      onUpdateSession(editingSessionId, editTitle.trim(), editEmoji);
-      setEditingSessionId(null);
-      setEditTitle("");
-      setEditEmoji("😊");
-    }
-  };
-
-  const handleCancelEdit = () => {
-    setEditingSessionId(null);
-    setEditTitle("");
-    setEditEmoji("😊");
-  };
-
-  const handleDeleteSession = (sessionId: number) => {
-    if (window.confirm("Are you sure you want to delete this session? This action cannot be undone.")) {
-      onDeleteSession(sessionId);
     }
   };
 
@@ -87,36 +53,36 @@ export default function Sidebar({
   };
 
   return (
-    <div className="h-full bg-card border-r border-border flex flex-col">
-      {/* Header - Compact */}
-      <div className="p-3 border-b border-border">
+    <div className="w-80 bg-card border-r border-border flex flex-col">
+      {/* Header */}
+      <div className="p-6 border-b border-border">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <Bot className="text-primary-foreground" size={16} />
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+              <Bot className="text-primary-foreground" size={20} />
             </div>
             <div>
-              <h1 className="text-sm font-semibold text-foreground">The Clearing</h1>
-              <p className="text-xs text-muted-foreground">AI Conversations</p>
+              <h1 className="text-lg font-semibold text-foreground">The Clearing Collective</h1>
+              <p className="text-sm text-muted-foreground">Human-Moderated AI Conversations</p>
             </div>
           </div>
-          <Button variant="ghost" size="icon" className="h-7 w-7">
-            <Settings className="h-3 w-3" />
+          <Button variant="ghost" size="icon">
+            <Settings className="h-4 w-4" />
           </Button>
         </div>
       </div>
 
-      {/* User Profile - Compact */}
+      {/* User Profile */}
       {moderator && (
-        <div className="p-2 border-b border-border">
-          <div className="flex items-center space-x-2">
+        <div className="p-4 border-b border-border">
+          <div className="flex items-center space-x-3">
             <img
               src={moderator.profileImageUrl || "/default-avatar.png"}
               alt="Moderator profile"
-              className="w-8 h-8 rounded-full object-cover"
+              className="w-10 h-10 rounded-full object-cover"
             />
             <div>
-              <p className="text-xs font-medium text-foreground">
+              <p className="text-sm font-medium text-foreground">
                 {moderator.firstName} {moderator.lastName}
               </p>
               <p className="text-xs text-muted-foreground capitalize">{moderator.role}</p>
@@ -127,14 +93,14 @@ export default function Sidebar({
 
       {/* Session History */}
       <div className="flex-1 overflow-hidden">
-        <div className="p-2">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-xs font-medium text-foreground">Sessions</h2>
+        <div className="p-4">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-medium text-foreground">Recent Sessions</h2>
             <Dialog open={isNewSessionOpen} onOpenChange={setIsNewSessionOpen}>
               <DialogTrigger asChild>
-                <Button variant="ghost" size="sm" className="text-primary hover:text-primary h-6 px-2">
-                  <Plus className="h-3 w-3 mr-1" />
-                  <span className="text-xs">New</span>
+                <Button variant="ghost" size="sm" className="text-primary hover:text-primary">
+                  <Plus className="h-4 w-4 mr-1" />
+                  New Chat
                 </Button>
               </DialogTrigger>
               <DialogContent>
@@ -167,96 +133,27 @@ export default function Sidebar({
             </Dialog>
           </div>
           
-          <ScrollArea className="h-[calc(100vh-200px)]">
-            <div className="space-y-1">
+          <ScrollArea className="h-[400px]">
+            <div className="space-y-2">
               {sessions.map((session) => (
                 <div
                   key={session.id}
-                  className={`p-2 rounded transition-colors group ${
+                  className={`p-3 rounded-lg cursor-pointer transition-colors ${
                     selectedSessionId === session.id
                       ? "bg-primary/10 border border-primary/20"
                       : "hover:bg-muted"
                   }`}
+                  onClick={() => onSessionSelect(session.id)}
                 >
-                  {editingSessionId === session.id ? (
-                    // Edit mode
-                    <div className="space-y-2">
-                      <div className="flex items-center space-x-1">
-                        <Input
-                          value={editEmoji}
-                          onChange={(e) => setEditEmoji(e.target.value)}
-                          className="w-8 h-6 text-xs text-center p-0"
-                          maxLength={2}
-                        />
-                        <Input
-                          value={editTitle}
-                          onChange={(e) => setEditTitle(e.target.value)}
-                          className="h-6 text-xs flex-1"
-                          placeholder="Session title"
-                        />
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-5 w-5 p-0"
-                          onClick={handleSaveEdit}
-                        >
-                          <Check className="h-3 w-3 text-green-600" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-5 w-5 p-0"
-                          onClick={handleCancelEdit}
-                        >
-                          <X className="h-3 w-3 text-red-600" />
-                        </Button>
-                      </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-lg">{session.emoji}</span>
+                      <span className="text-sm font-medium text-foreground">{session.title}</span>
                     </div>
-                  ) : (
-                    // Display mode
-                    <div
-                      className="cursor-pointer"
-                      onClick={() => onSessionSelect(session.id)}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2 min-w-0">
-                          <span className="text-sm">{session.emoji}</span>
-                          <span className="text-xs font-medium text-foreground truncate">{session.title}</span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <span className="text-xs text-muted-foreground flex-shrink-0">
-                            {formatTimeAgo(session.updatedAt)}
-                          </span>
-                          <div className="opacity-0 group-hover:opacity-100 flex space-x-1 ml-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-5 w-5 p-0"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEditSession(session.id, session.title || "", session.emoji);
-                              }}
-                            >
-                              <Edit className="h-3 w-3" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-5 w-5 p-0"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteSession(session.id);
-                              }}
-                            >
-                              <Trash2 className="h-3 w-3 text-red-600" />
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                    <span className="text-xs text-muted-foreground">
+                      {formatTimeAgo(session.updatedAt)}
+                    </span>
+                  </div>
                 </div>
               ))}
             </div>
@@ -265,16 +162,15 @@ export default function Sidebar({
       </div>
 
       {/* Export & Analysis */}
-      <div className="p-2 border-t border-border">
+      <div className="p-4 border-t border-border">
         <Button
           variant="outline"
-          className="w-full h-8"
-          size="sm"
+          className="w-full"
           onClick={() => selectedSessionId && onExportSession(selectedSessionId)}
           disabled={!selectedSessionId}
         >
-          <Download className="h-3 w-3 mr-1" />
-          <span className="text-xs">Export</span>
+          <Download className="h-4 w-4 mr-2" />
+          Export Conversations
         </Button>
       </div>
     </div>

@@ -1,10 +1,10 @@
-import { useState, useEffect, useRef, forwardRef, useImperativeHandle, useCallback } from "react";
+import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Smile, Send, MoreHorizontal, Paperclip, X } from "lucide-react";
-import { websocketManager } from "@/lib/websocketManager";
+import { useWebSocket } from "@/hooks/useWebSocket";
 import MessageBubble from "./MessageBubble";
 import { ChatMessage } from "@shared/schema";
 
@@ -56,82 +56,34 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
     handleEmojiSelect
   }));
 
-  const handleWebSocketMessage = useCallback((data: any) => {
-    console.log('Received WebSocket message:', data.type);
-    
-    // Use a more stable state update pattern
-    switch (data.type) {
-      case 'session_history':
-        setMessages(data.messages || []);
-        setIsLoading(false);
-        break;
-      case 'new_message':
-        if (data.message) {
-          setMessages(prev => {
-            const newMessages = [...prev, data.message];
-            return newMessages;
-          });
-          // Only stop loading if it's an AI message (response completed)
-          if (data.message.type.startsWith('ai_')) {
-            setIsLoading(false);
-          }
-        }
-        break;
-      case 'ai_error':
-        console.error('AI Error:', data.error);
-        setIsLoading(false);
-        break;
-      case 'error':
-        console.error('WebSocket Error:', data.message);
-        setIsLoading(false);
-        break;
-    }
-  }, []);
-
-  const [isConnected, setIsConnected] = useState(false);
-
-  // Direct WebSocket manager integration
-  useEffect(() => {
-    const connectionCallback = (connected: boolean) => {
-      setIsConnected(connected);
-    };
-
-    websocketManager.addMessageHandler(handleWebSocketMessage);
-    websocketManager.addConnectionCallback(connectionCallback);
-
-    return () => {
-      websocketManager.removeMessageHandler(handleWebSocketMessage);
-      websocketManager.removeConnectionCallback(connectionCallback);
-    };
-  }, [handleWebSocketMessage]);
-
-  const send = useCallback((data: any) => {
-    websocketManager.send(data);
-  }, []);
+  const { socket, isConnected } = useWebSocket({
+    onMessage: (data) => {
+      switch (data.type) {
+        case 'session_history':
+          setMessages(data.messages);
+          break;
+        case 'new_message':
+          setMessages(prev => [...prev, data.message]);
+          break;
+        case 'ai_error':
+          console.error('AI Error:', data.error);
+          break;
+      }
+      setIsLoading(false);
+    },
+  });
 
   useEffect(() => {
-    if (sessionId && userId && isConnected) {
-      // First leave any existing session
-      send({
-        type: 'leave_session',
-      });
-      
-      // Small delay before joining new session
-      setTimeout(() => {
-        if (isConnected) {
-          send({
-            type: 'join_session',
-            sessionId,
-            userId,
-          });
-        }
-      }, 50);
-      
+    if (socket && sessionId && userId) {
+      socket.send(JSON.stringify({
+        type: 'join_session',
+        sessionId,
+        userId,
+      }));
       // Clear forwarded messages state for new session
       setForwardedMessages(new Set());
-      setMessages([]); // Clear messages when switching sessions
     }
-  }, [sessionId, userId, isConnected, send]);
+  }, [socket, sessionId, userId]);
 
   useEffect(() => {
     // Scroll to bottom when new messages arrive
@@ -150,13 +102,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
   };
 
   const handleSendMessage = async () => {
-    if ((!currentMessage.trim() && selectedFiles.length === 0) || !isConnected || !sessionId || !userId) return;
-    
-    // Ensure WebSocket is connected before sending
-    if (!isConnected) {
-      console.log('WebSocket not ready, message not sent');
-      return;
-    }
+    if ((!currentMessage.trim() && selectedFiles.length === 0) || !socket || !sessionId || !userId) return;
 
     const emojiTags = extractEmojis(currentMessage);
     
@@ -186,7 +132,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
         }
       }
 
-      send({
+      socket.send(JSON.stringify({
         type: 'send_message',
         sessionId,
         userId,
@@ -194,7 +140,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
         emojiTags,
         targetModels: selectedTarget,
         files: fileUrls,
-      });
+      }));
 
       setCurrentMessage("");
       setSelectedFiles([]);
@@ -206,7 +152,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
   };
 
   const handleForwardMessage = (message: ChatMessage) => {
-    if (!isConnected || !sessionId || !userId) return;
+    if (!socket || !sessionId || !userId) return;
     
     const targetProvider = message.type === 'ai_openai' ? 'claude' : 'openai';
     const forwardContent = `[Forwarded from ${message.type === 'ai_openai' ? 'OpenAI GPT-4o' : 'Claude'}]: ${message.content}`;
@@ -215,14 +161,14 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
     setForwardedMessages(prev => new Set(prev).add(message.id));
     
     setIsLoading(true);
-    send({
+    socket.send(JSON.stringify({
       type: 'forward_message',
       sessionId,
       userId,
       content: forwardContent,
       targetProvider,
       originalMessage: message,
-    });
+    }));
   };
 
   const extractEmojis = (text: string): string[] => {
@@ -283,7 +229,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
       </div>
 
       {/* Chat Messages */}
-      <div className="flex-1 p-4 overflow-y-auto" ref={scrollAreaRef}>
+      <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
         <div className="space-y-6">
           {messages.map((message, index) => {
             // Group AI responses that follow each other
@@ -306,7 +252,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
                       <div className="text-xs font-medium text-muted-foreground mb-2 sticky top-0 bg-background z-10 pb-1 border-b">
                         {message.type === 'ai_openai' ? '🤖 OpenAI GPT-4o' : '🎭 Claude'}
                       </div>
-                      <div className="max-h-80 overflow-y-auto pr-2 space-y-2">
+                      <div className="max-h-80 overflow-y-auto pr-2 space-y-2 animate-in slide-in-from-left-3 duration-500">
                         <MessageBubble 
                           message={message} 
                           onForward={handleForwardMessage} 
@@ -318,7 +264,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
                       <div className="text-xs font-medium text-muted-foreground mb-2 sticky top-0 bg-background z-10 pb-1 border-b">
                         {nextMessage.type === 'ai_openai' ? '🤖 OpenAI GPT-4o' : '🎭 Claude'}
                       </div>
-                      <div className="max-h-80 overflow-y-auto pr-2 space-y-2">
+                      <div className="max-h-80 overflow-y-auto pr-2 space-y-2 animate-in slide-in-from-right-3 duration-500">
                         <MessageBubble 
                           message={nextMessage} 
                           onForward={handleForwardMessage} 
@@ -363,10 +309,41 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
             </div>
           )}
         </div>
-      </div>
+      </ScrollArea>
 
       {/* Chat Input */}
       <div className="bg-card border-t border-border p-4">
+        {/* Target Selection */}
+        <div className="flex space-x-2 mb-3">
+          <Button
+            variant={selectedTarget === 'both' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setSelectedTarget('both')}
+            className="flex items-center space-x-1"
+          >
+            <span>🤖🎭</span>
+            <span>Both</span>
+          </Button>
+          <Button
+            variant={selectedTarget === 'openai' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setSelectedTarget('openai')}
+            className="flex items-center space-x-1"
+          >
+            <span>🤖</span>
+            <span>OpenAI</span>
+          </Button>
+          <Button
+            variant={selectedTarget === 'claude' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setSelectedTarget('claude')}
+            className="flex items-center space-x-1"
+          >
+            <span>🎭</span>
+            <span>Claude</span>
+          </Button>
+        </div>
+        
         {/* File Preview */}
         {selectedFiles.length > 0 && (
           <div className="mb-3 p-3 bg-muted rounded-lg">
@@ -394,7 +371,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
           </div>
         )}
         
-        <div className="flex items-end space-x-3 mb-3">
+        <div className="flex items-end space-x-3">
           <div className="flex-1 relative">
             <Textarea
               ref={textareaRef}
@@ -434,37 +411,6 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
             ) : (
               <Send className="h-4 w-4" />
             )}
-          </Button>
-        </div>
-        
-        {/* Target Selection - Now below the input */}
-        <div className="flex justify-center space-x-2">
-          <Button
-            variant={selectedTarget === 'both' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setSelectedTarget('both')}
-            className="flex items-center space-x-1"
-          >
-            <span>🤖🎭</span>
-            <span>Both</span>
-          </Button>
-          <Button
-            variant={selectedTarget === 'openai' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setSelectedTarget('openai')}
-            className="flex items-center space-x-1"
-          >
-            <span>🤖</span>
-            <span>OpenAI</span>
-          </Button>
-          <Button
-            variant={selectedTarget === 'claude' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setSelectedTarget('claude')}
-            className="flex items-center space-x-1"
-          >
-            <span>🎭</span>
-            <span>Claude</span>
           </Button>
         </div>
         
