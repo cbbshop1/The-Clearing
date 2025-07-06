@@ -24,7 +24,7 @@ export default function ModelPanel({ aiModels }: ModelPanelProps) {
     }
   };
 
-  const getStatusColor = (isActive: boolean) => {
+  const getStatusColor = (isActive: boolean | null) => {
     return isActive ? "bg-green-500" : "bg-muted-foreground";
   };
 

@@ -37,9 +37,10 @@ const upload = multer({
     // Allow images, text files, PDFs, and documents
     const allowedTypes = /jpeg|jpg|png|gif|txt|pdf|doc|docx|md|json|csv/;
     const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
+    const allowedMimeTypes = /image\/|text\/|application\/pdf|application\/msword|application\/vnd\.openxmlformats-officedocument\.wordprocessingml\.document|application\/json|text\/csv/;
+    const mimetype = allowedMimeTypes.test(file.mimetype);
     
-    if (mimetype && extname) {
+    if (mimetype || extname) {
       return cb(null, true);
     } else {
       cb(new Error('Invalid file type'));
@@ -148,11 +149,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return false;
       });
       
-      // Get session context
+      // Get session context with more comprehensive history
       const session = await storage.getSession(sessionId);
       const context = session?.messages
-        .slice(-5) // Last 5 messages for context
-        .map(m => `${m.type}: ${m.content}`)
+        .slice(-10) // Last 10 messages for better context
+        .map(m => {
+          const author = m.type === 'user' ? (m.user?.firstName || 'User') : 
+                        m.type === 'ai_openai' ? '🤖 OpenAI' :
+                        m.type === 'ai_claude' ? '🎭 Claude' : 'AI';
+          return `${author}: ${m.content}`;
+        })
         .join('\n') || '';
 
       // Generate AI responses
