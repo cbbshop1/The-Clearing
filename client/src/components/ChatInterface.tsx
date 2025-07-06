@@ -4,7 +4,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Smile, Send, MoreHorizontal, Paperclip, X } from "lucide-react";
-import { useGlobalWebSocket } from "@/hooks/useGlobalWebSocket";
+import { useWebSocketManager } from "@/hooks/useWebSocketManager";
 import MessageBubble from "./MessageBubble";
 import { ChatMessage } from "@shared/schema";
 
@@ -80,7 +80,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
     }
   }, []);
 
-  const { socket, isConnected, send } = useGlobalWebSocket({
+  const { isConnected, send } = useWebSocketManager({
     onMessage: handleWebSocketMessage,
   });
 
