@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Smile, Send, MoreHorizontal } from "lucide-react";
+import { Smile, Send, MoreHorizontal, Paperclip, X } from "lucide-react";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import MessageBubble from "./MessageBubble";
 import { ChatMessage } from "@shared/schema";
@@ -27,8 +27,12 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [forwardedMessages, setForwardedMessages] = useState<Set<number>>(new Set());
+  const [selectedTarget, setSelectedTarget] = useState<'both' | 'openai' | 'claude'>('both');
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [fileUploading, setFileUploading] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleEmojiSelect = (emoji: string) => {
     if (textareaRef.current) {
@@ -88,21 +92,63 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
     }
   }, [messages]);
 
-  const handleSendMessage = () => {
-    if (!currentMessage.trim() || !socket || !sessionId || !userId) return;
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    setSelectedFiles(prev => [...prev, ...files]);
+  };
+
+  const handleRemoveFile = (index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSendMessage = async () => {
+    if ((!currentMessage.trim() && selectedFiles.length === 0) || !socket || !sessionId || !userId) return;
 
     const emojiTags = extractEmojis(currentMessage);
     
     setIsLoading(true);
-    socket.send(JSON.stringify({
-      type: 'send_message',
-      sessionId,
-      userId,
-      content: currentMessage,
-      emojiTags,
-    }));
+    setFileUploading(true);
 
-    setCurrentMessage("");
+    try {
+      // If files are selected, upload them first
+      let fileUrls: string[] = [];
+      if (selectedFiles.length > 0) {
+        const formData = new FormData();
+        selectedFiles.forEach(file => {
+          formData.append('files', file);
+        });
+        formData.append('sessionId', sessionId.toString());
+
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          fileUrls = result.fileUrls;
+        } else {
+          console.error('File upload failed');
+        }
+      }
+
+      socket.send(JSON.stringify({
+        type: 'send_message',
+        sessionId,
+        userId,
+        content: currentMessage,
+        emojiTags,
+        targetModels: selectedTarget,
+        files: fileUrls,
+      }));
+
+      setCurrentMessage("");
+      setSelectedFiles([]);
+    } catch (error) {
+      console.error('Error sending message with files:', error);
+    } finally {
+      setFileUploading(false);
+    }
   };
 
   const handleForwardMessage = (message: ChatMessage) => {
@@ -267,6 +313,64 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
 
       {/* Chat Input */}
       <div className="bg-card border-t border-border p-4">
+        {/* Target Selection */}
+        <div className="flex space-x-2 mb-3">
+          <Button
+            variant={selectedTarget === 'both' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setSelectedTarget('both')}
+            className="flex items-center space-x-1"
+          >
+            <span>🤖🎭</span>
+            <span>Both</span>
+          </Button>
+          <Button
+            variant={selectedTarget === 'openai' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setSelectedTarget('openai')}
+            className="flex items-center space-x-1"
+          >
+            <span>🤖</span>
+            <span>OpenAI</span>
+          </Button>
+          <Button
+            variant={selectedTarget === 'claude' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setSelectedTarget('claude')}
+            className="flex items-center space-x-1"
+          >
+            <span>🎭</span>
+            <span>Claude</span>
+          </Button>
+        </div>
+        
+        {/* File Preview */}
+        {selectedFiles.length > 0 && (
+          <div className="mb-3 p-3 bg-muted rounded-lg">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium">Attached Files ({selectedFiles.length})</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {selectedFiles.map((file, index) => (
+                <div key={index} className="flex items-center space-x-2 bg-background p-2 rounded border">
+                  <span className="text-sm truncate max-w-32">{file.name}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {(file.size / 1024).toFixed(1)}KB
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6"
+                    onClick={() => handleRemoveFile(index)}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
         <div className="flex items-end space-x-3">
           <div className="flex-1 relative">
             <Textarea
@@ -274,27 +378,51 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
               value={currentMessage}
               onChange={(e) => setCurrentMessage(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Type your message or use emojis..."
-              className="resize-none min-h-[48px] pr-12"
+              placeholder={`Type your message to ${selectedTarget === 'both' ? 'both models' : selectedTarget === 'openai' ? 'OpenAI GPT-4o' : 'Claude'}...`}
+              className="resize-none min-h-[48px] pr-24"
               rows={1}
             />
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute right-2 top-2"
-              onClick={onOpenEmojiLexicon}
-            >
-              <Smile className="h-4 w-4" />
-            </Button>
+            <div className="absolute right-2 top-2 flex space-x-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Paperclip className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={onOpenEmojiLexicon}
+              >
+                <Smile className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
           <Button
             onClick={handleSendMessage}
-            disabled={!currentMessage.trim() || isLoading}
+            disabled={(!currentMessage.trim() && selectedFiles.length === 0) || isLoading || fileUploading}
             className="px-4 py-3"
           >
-            <Send className="h-4 w-4" />
+            {fileUploading ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current" />
+            ) : (
+              <Send className="h-4 w-4" />
+            )}
           </Button>
         </div>
+        
+        {/* Hidden file input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          accept="image/*,text/*,.pdf,.doc,.docx,.txt,.md,.json,.csv"
+          onChange={handleFileSelect}
+          className="hidden"
+        />
       </div>
     </div>
   );

@@ -32,6 +32,7 @@ export const messages = pgTable("messages", {
   type: text("type").notNull(), // user, moderator, ai
   aiModel: text("ai_model"), // openai, anthropic, etc.
   emojiTags: text("emoji_tags").array().default([]),
+  files: text("files").array().default([]), // file URLs
   metadata: jsonb("metadata").default({}),
   createdAt: timestamp("created_at").defaultNow(),
 });

@@ -108,6 +108,11 @@ This is a full-stack web application that provides a platform for human-moderate
 - July 06, 2025: Enhanced export functionality to generate downloadable markdown files
 - July 06, 2025: Added independent scrolling areas for side-by-side AI responses
 - July 06, 2025: Implemented smooth animations for message arrival
+- July 06, 2025: Added independent messaging controls (send to both, OpenAI only, or Claude only)
+- July 06, 2025: Fixed export file format to properly download as markdown files
+- July 06, 2025: Implemented file upload functionality with support for images, documents, and text files
+- July 06, 2025: Added file display in message bubbles with preview for images and download buttons
+- July 06, 2025: Enhanced AI prompts to analyze and discuss uploaded file content
 
 ## User Preferences
 

@@ -40,11 +40,12 @@ export class AIService {
     message: string,
     context: string,
     emojiTags: string[],
-    model: AiModel
+    model: AiModel,
+    files: string[] = []
   ): Promise<AIResponse> {
     const startTime = Date.now();
     
-    const prompt = this.buildPrompt(message, context, emojiTags);
+    const prompt = this.buildPrompt(message, context, emojiTags, files);
     
     try {
       if (model.provider === "openai") {
@@ -60,20 +61,25 @@ export class AIService {
     }
   }
 
-  private buildPrompt(message: string, context: string, emojiTags: string[]): string {
+  private buildPrompt(message: string, context: string, emojiTags: string[], files: string[] = []): string {
     const emojiContext = emojiTags.length > 0 
       ? `\n\nEmoji context: ${emojiTags.join(", ")} - These emojis provide emotional context for the conversation.`
+      : "";
+
+    const fileContext = files.length > 0 
+      ? `\n\nAttached files: ${files.length} file(s) have been shared. Please analyze and discuss the content of these files in your response.`
       : "";
 
     return `You are participating in "The Clearing Collective" - a platform for human-moderated conversations between multiple AI models. Your role is to provide thoughtful, balanced perspectives that contribute to a collaborative dialogue.
 
 Context from previous messages: ${context}
-Current message: ${message}${emojiContext}
+Current message: ${message}${emojiContext}${fileContext}
 
 Guidelines for your response:
 - Acknowledge other AI perspectives respectfully when present
 - Provide your unique viewpoint while remaining open to dialogue
 - Use emojis meaningfully to enhance emotional expression
+- If files are attached, analyze and discuss their content thoughtfully
 - Be supportive and constructive, contributing to a balanced conversation
 - Consider how your response adds value to the collective understanding
 

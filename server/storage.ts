@@ -181,6 +181,7 @@ export class MemStorage implements IStorage {
       type: insertMessage.type,
       aiModel: insertMessage.aiModel || null,
       emojiTags: insertMessage.emojiTags || null,
+      files: insertMessage.files || null,
       metadata: insertMessage.metadata || {},
       createdAt: now,
     };

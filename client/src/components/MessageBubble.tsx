@@ -1,7 +1,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { User, Brain, Lightbulb, Forward } from "lucide-react";
+import { User, Brain, Lightbulb, Forward, Download, FileText, Image } from "lucide-react";
 import { ChatMessage } from "@shared/schema";
 
 interface MessageBubbleProps {
@@ -17,6 +17,19 @@ export default function MessageBubble({ message, onForward, isForwarded = false 
       minute: '2-digit',
       hour12: true,
     });
+  };
+
+  const getFileIcon = (fileName: string) => {
+    const ext = fileName.split('.').pop()?.toLowerCase();
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext || '')) {
+      return <Image className="h-4 w-4" />;
+    }
+    return <FileText className="h-4 w-4" />;
+  };
+
+  const isImageFile = (fileName: string) => {
+    const ext = fileName.split('.').pop()?.toLowerCase();
+    return ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext || '');
   };
 
   const getAvatarContent = () => {
@@ -98,6 +111,56 @@ export default function MessageBubble({ message, onForward, isForwarded = false 
         
         <div className={`rounded-lg p-3 max-w-md border ${getMessageStyle()}`}>
           <p className="text-foreground whitespace-pre-wrap">{message.content}</p>
+          
+          {/* Display attached files */}
+          {message.files && message.files.length > 0 && (
+            <div className="mt-3 space-y-2">
+              <div className="text-xs text-muted-foreground">Attachments:</div>
+              <div className="grid gap-2">
+                {message.files.map((fileUrl, index) => {
+                  const fileName = fileUrl.split('/').pop() || 'file';
+                  const displayName = fileName.split('_').slice(2).join('_') || fileName;
+                  
+                  return (
+                    <div key={index} className="flex items-center space-x-2 p-2 bg-muted rounded border">
+                      {isImageFile(displayName) ? (
+                        <div className="flex items-center space-x-2 flex-1">
+                          <img 
+                            src={fileUrl} 
+                            alt={displayName}
+                            className="w-16 h-16 object-cover rounded border"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
+                          <div className="flex-1">
+                            <div className="text-sm font-medium truncate">{displayName}</div>
+                            <div className="text-xs text-muted-foreground">Image</div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center space-x-2 flex-1">
+                          {getFileIcon(displayName)}
+                          <div className="flex-1">
+                            <div className="text-sm font-medium truncate">{displayName}</div>
+                            <div className="text-xs text-muted-foreground">Document</div>
+                          </div>
+                        </div>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => window.open(fileUrl, '_blank')}
+                      >
+                        <Download className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
           
           {/* Forward button for AI responses */}
           {(message.type === 'ai_openai' || message.type === 'ai_claude') && onForward && (
