@@ -1,13 +1,15 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { User, Brain, Lightbulb } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { User, Brain, Lightbulb, Forward } from "lucide-react";
 import { ChatMessage } from "@shared/schema";
 
 interface MessageBubbleProps {
   message: ChatMessage;
+  onForward?: (message: ChatMessage) => void;
 }
 
-export default function MessageBubble({ message }: MessageBubbleProps) {
+export default function MessageBubble({ message, onForward }: MessageBubbleProps) {
   const formatTime = (date: Date) => {
     return new Date(date).toLocaleTimeString('en-US', {
       hour: 'numeric',
@@ -95,6 +97,21 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
         
         <div className={`rounded-lg p-3 max-w-md border ${getMessageStyle()}`}>
           <p className="text-foreground whitespace-pre-wrap">{message.content}</p>
+          
+          {/* Forward button for AI responses */}
+          {(message.type === 'ai_openai' || message.type === 'ai_claude') && onForward && (
+            <div className="flex justify-end mt-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onForward(message)}
+                className="text-xs h-6 px-2"
+              >
+                <Forward className="h-3 w-3 mr-1" />
+                Forward to {message.type === 'ai_openai' ? 'Claude' : 'GPT-4o'}
+              </Button>
+            </div>
+          )}
           
           {message.emojiTags && message.emojiTags.length > 0 && (
             <div className="flex items-center space-x-1 mt-2">

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import ChatInterface from "@/components/ChatInterface";
 import Sidebar from "@/components/Sidebar";
@@ -9,6 +9,7 @@ import { Session, AiModel } from "@shared/schema";
 export default function Home() {
   const [selectedSessionId, setSelectedSessionId] = useState<number | null>(null);
   const [isEmojiLexiconOpen, setIsEmojiLexiconOpen] = useState(false);
+  const chatInterfaceRef = useRef<{ handleEmojiSelect: (emoji: string) => void } | null>(null);
   
   // Get moderator user
   const { data: moderator } = useQuery({
@@ -84,6 +85,7 @@ export default function Home() {
         />
         
         <ChatInterface
+          ref={chatInterfaceRef}
           sessionId={selectedSessionId}
           userId={moderator?.id}
           onOpenEmojiLexicon={() => setIsEmojiLexiconOpen(true)}
@@ -95,6 +97,10 @@ export default function Home() {
       <EmojiLexicon
         isOpen={isEmojiLexiconOpen}
         onClose={() => setIsEmojiLexiconOpen(false)}
+        onEmojiSelect={(emoji) => {
+          chatInterfaceRef.current?.handleEmojiSelect(emoji);
+          setIsEmojiLexiconOpen(false);
+        }}
       />
     </>
   );

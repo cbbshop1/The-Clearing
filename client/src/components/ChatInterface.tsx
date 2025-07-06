@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -14,15 +14,42 @@ interface ChatInterfaceProps {
   onOpenEmojiLexicon: () => void;
 }
 
-export default function ChatInterface({
+export interface ChatInterfaceRef {
+  handleEmojiSelect: (emoji: string) => void;
+}
+
+const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
   sessionId,
   userId,
   onOpenEmojiLexicon,
-}: ChatInterfaceProps) {
+}: ChatInterfaceProps, ref) => {
   const [currentMessage, setCurrentMessage] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const handleEmojiSelect = (emoji: string) => {
+    if (textareaRef.current) {
+      const textarea = textareaRef.current;
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const text = textarea.value;
+      const newText = text.substring(0, start) + emoji + text.substring(end);
+      setCurrentMessage(newText);
+      
+      // Reset cursor position after emoji
+      setTimeout(() => {
+        textarea.focus();
+        textarea.setSelectionRange(start + emoji.length, start + emoji.length);
+      }, 0);
+    }
+  };
+
+  // Expose methods to parent component
+  useImperativeHandle(ref, () => ({
+    handleEmojiSelect
+  }));
 
   const { socket, isConnected } = useWebSocket({
     onMessage: (data) => {
@@ -73,6 +100,23 @@ export default function ChatInterface({
     }));
 
     setCurrentMessage("");
+  };
+
+  const handleForwardMessage = (message: ChatMessage) => {
+    if (!socket || !sessionId || !userId) return;
+    
+    const targetProvider = message.type === 'ai_openai' ? 'claude' : 'openai';
+    const forwardContent = `[Forwarded from ${message.type === 'ai_openai' ? 'OpenAI GPT-4o' : 'Claude'}]: ${message.content}`;
+    
+    setIsLoading(true);
+    socket.send(JSON.stringify({
+      type: 'forward_message',
+      sessionId,
+      userId,
+      content: forwardContent,
+      targetProvider,
+      originalMessage: message,
+    }));
   };
 
   const extractEmojis = (text: string): string[] => {
@@ -136,7 +180,7 @@ export default function ChatInterface({
       <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
         <div className="space-y-6">
           {messages.map((message) => (
-            <MessageBubble key={message.id} message={message} />
+            <MessageBubble key={message.id} message={message} onForward={handleForwardMessage} />
           ))}
           
           {isLoading && (
@@ -164,6 +208,7 @@ export default function ChatInterface({
         <div className="flex items-end space-x-3">
           <div className="flex-1 relative">
             <Textarea
+              ref={textareaRef}
               value={currentMessage}
               onChange={(e) => setCurrentMessage(e.target.value)}
               onKeyPress={handleKeyPress}
@@ -191,4 +236,8 @@ export default function ChatInterface({
       </div>
     </div>
   );
-}
+});
+
+ChatInterface.displayName = "ChatInterface";
+
+export default ChatInterface;

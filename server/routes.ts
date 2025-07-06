@@ -10,6 +10,14 @@ interface WebSocketClient extends WebSocket {
   sessionId?: number;
 }
 
+// Helper function to extract emojis from text
+function extractEmojis(text: string): string[] {
+  // Simple emoji extraction - return empty array for now
+  return [];
+}
+
+
+
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
   
@@ -49,6 +57,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
           case 'send_message':
             await handleSendMessage(data, ws);
+            break;
+          case 'forward_message':
+            await handleForwardMessage(data, ws);
             break;
         }
       } catch (error) {
@@ -153,6 +164,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
       ws.send(JSON.stringify({
         type: 'error',
         message: 'Failed to send message',
+      }));
+    }
+  }
+
+  async function handleForwardMessage(data: any, ws: WebSocketClient) {
+    try {
+      const { sessionId, content, targetProvider, userId } = data;
+      
+      // Get the target AI model
+      const models = await storage.getActiveAiModels();
+      const targetModel = models.find(m => 
+        targetProvider === 'openai' ? m.provider === 'openai' : m.provider === 'anthropic'
+      );
+      
+      if (!targetModel) {
+        ws.send(JSON.stringify({
+          type: 'error',
+          message: 'Target model not found',
+        }));
+        return;
+      }
+
+      // Extract emojis from forwarded content
+      const emojiTags = extractEmojis(content);
+      
+      // Generate AI response from target model
+      const aiResponse = await aiService.generateResponse(
+        content,
+        JSON.stringify({ sessionId, forwardedMessage: true }),
+        emojiTags,
+        targetModel
+      );
+
+      // Create AI message
+      const aiMessage = await storage.createMessage({
+        sessionId,
+        userId: null,
+        content: aiResponse.content,
+        type: targetProvider === 'openai' ? 'ai_openai' : 'ai_claude',
+        aiModel: targetModel.name,
+        emojiTags: aiResponse.emojiTags,
+        metadata: aiResponse.metadata,
+      });
+
+      // Broadcast AI message to all clients in session
+      broadcastToSession(sessionId, {
+        type: 'new_message',
+        message: {
+          ...aiMessage,
+          timestamp: aiMessage.createdAt || new Date(),
+        },
+      });
+    } catch (error) {
+      console.error('Error handling forward message:', error);
+      ws.send(JSON.stringify({
+        type: 'error',
+        message: 'Failed to forward message',
       }));
     }
   }

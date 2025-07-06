@@ -76,7 +76,7 @@ export function useWebSocket({ onMessage, onError, onClose }: UseWebSocketProps)
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
       }
-      if (ws.readyState === WebSocket.OPEN) {
+      if (ws && ws.readyState === WebSocket.OPEN) {
         ws.close();
       }
     };
