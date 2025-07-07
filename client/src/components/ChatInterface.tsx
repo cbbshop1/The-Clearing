@@ -31,6 +31,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [fileUploading, setFileUploading] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const scrollViewportRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -87,8 +88,15 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
 
   useEffect(() => {
     // Scroll to bottom when new messages arrive
-    if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
+    if (scrollViewportRef.current) {
+      const viewport = scrollViewportRef.current;
+      // Only auto-scroll if user is already near the bottom
+      const isNearBottom = viewport.scrollTop + viewport.clientHeight >= viewport.scrollHeight - 100;
+      if (isNearBottom || messages.length <= 1) {
+        setTimeout(() => {
+          viewport.scrollTop = viewport.scrollHeight;
+        }, 100);
+      }
     }
   }, [messages]);
 
@@ -229,7 +237,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
       </div>
 
       {/* Chat Messages */}
-      <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
+      <div className="flex-1 p-4 overflow-y-auto" ref={scrollViewportRef}>
         <div className="space-y-6">
           {messages.map((message, index) => {
             // Group AI responses that follow each other
@@ -309,7 +317,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
             </div>
           )}
         </div>
-      </ScrollArea>
+      </div>
 
       {/* Chat Input */}
       <div className="bg-card border-t border-border p-4">
