@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Edit2, Trash2, BookOpen, Tag, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -157,6 +157,9 @@ export default function KnowledgeBase({ isOpen, onClose, aiModels }: KnowledgeBa
             <BookOpen className="h-5 w-5" />
             Knowledge Base Management
           </DialogTitle>
+          <DialogDescription>
+            Manage knowledge entries and assign them to AI models to enhance their responses.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -301,6 +304,9 @@ export default function KnowledgeBase({ isOpen, onClose, aiModels }: KnowledgeBa
               <DialogTitle>
                 {editingKnowledge ? 'Edit Knowledge Entry' : 'Add Knowledge Entry'}
               </DialogTitle>
+              <DialogDescription>
+                {editingKnowledge ? 'Update the knowledge entry details below.' : 'Fill in the details to create a new knowledge entry.'}
+              </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
