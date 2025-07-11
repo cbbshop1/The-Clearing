@@ -47,6 +47,26 @@ export const aiModels = pgTable("ai_models", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const knowledgeBase = pgTable("knowledge_base", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  content: text("content").notNull(),
+  category: text("category").default("general"),
+  tags: text("tags").array().default([]),
+  source: text("source"), // file name, URL, or manual entry
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const aiModelKnowledge = pgTable("ai_model_knowledge", {
+  id: serial("id").primaryKey(),
+  aiModelId: integer("ai_model_id").references(() => aiModels.id, { onDelete: "cascade" }),
+  knowledgeBaseId: integer("knowledge_base_id").references(() => knowledgeBase.id, { onDelete: "cascade" }),
+  priority: integer("priority").default(1), // higher priority = more important
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
@@ -69,6 +89,17 @@ export const insertAiModelSchema = createInsertSchema(aiModels).omit({
   createdAt: true,
 });
 
+export const insertKnowledgeBaseSchema = createInsertSchema(knowledgeBase).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertAiModelKnowledgeSchema = createInsertSchema(aiModelKnowledge).omit({
+  id: true,
+  createdAt: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 
@@ -80,6 +111,12 @@ export type Message = typeof messages.$inferSelect;
 
 export type InsertAiModel = z.infer<typeof insertAiModelSchema>;
 export type AiModel = typeof aiModels.$inferSelect;
+
+export type InsertKnowledgeBase = z.infer<typeof insertKnowledgeBaseSchema>;
+export type KnowledgeBase = typeof knowledgeBase.$inferSelect;
+
+export type InsertAiModelKnowledge = z.infer<typeof insertAiModelKnowledgeSchema>;
+export type AiModelKnowledge = typeof aiModelKnowledge.$inferSelect;
 
 export interface ChatMessage extends Message {
   user?: User;

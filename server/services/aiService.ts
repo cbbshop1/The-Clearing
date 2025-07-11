@@ -38,6 +38,40 @@ export interface AIResponse {
 }
 
 export class AIService {
+  private async getAiModelKnowledge(model: AiModel): Promise<string> {
+    try {
+      const { storage } = await import("../storage");
+      const knowledge = await storage.getAiModelKnowledge(model.id);
+      
+      if (knowledge.length === 0) {
+        return "";
+      }
+      
+      let knowledgeText = "\n## Personal Knowledge Base\n\n";
+      knowledgeText += "You have access to the following knowledge that is specific to you:\n\n";
+      
+      knowledge.forEach((item, index) => {
+        knowledgeText += `### ${item.title}\n`;
+        knowledgeText += `Category: ${item.category}\n`;
+        if (item.tags && item.tags.length > 0) {
+          knowledgeText += `Tags: ${item.tags.join(", ")}\n`;
+        }
+        knowledgeText += `${item.content}\n\n`;
+        if (item.source) {
+          knowledgeText += `*Source: ${item.source}*\n\n`;
+        }
+        knowledgeText += "---\n\n";
+      });
+      
+      knowledgeText += "Please reference this knowledge when relevant to the conversation. This is your personal knowledge base that makes you unique.\n\n";
+      
+      return knowledgeText;
+    } catch (error) {
+      console.error("Error fetching AI model knowledge:", error);
+      return "";
+    }
+  }
+
   private async readFileContent(filePath: string): Promise<string | null> {
     try {
       // Remove leading slash if present since we're joining with process.cwd()
@@ -96,22 +130,33 @@ export class AIService {
 
 
 
-  private buildSystemPrompt(emojiTags: string[], files: string[], allFileContents: (string | null)[] = []): string {
-    if (files.length === 0) return "";
+  private async buildSystemPrompt(emojiTags: string[], files: string[], allFileContents: (string | null)[] = [], model?: AiModel): string {
+    let systemPrompt = "";
     
-    // For file uploads, provide file information and content
-    const fileInfos = files.map((filePath, index) => {
-      const fileName = filePath.includes('/') ? filePath.split('/').pop() : filePath;
-      const content = allFileContents[index];
+    // Add AI model's personal knowledge base
+    if (model) {
+      const knowledge = await this.getAiModelKnowledge(model);
+      systemPrompt += knowledge;
+    }
+    
+    // Add file upload information if files exist
+    if (files.length > 0) {
+      const fileInfos = files.map((filePath, index) => {
+        const fileName = filePath.includes('/') ? filePath.split('/').pop() : filePath;
+        const content = allFileContents[index];
+        
+        if (content) {
+          return `File "${fileName}":\n${content}`;
+        } else {
+          return `File: ${fileName} (content not readable)`;
+        }
+      });
       
-      if (content) {
-        return `File "${fileName}":\n${content}`;
-      } else {
-        return `File: ${fileName} (content not readable)`;
-      }
-    });
+      if (systemPrompt) systemPrompt += "\n\n";
+      systemPrompt += `## Uploaded Files\n\nFiles uploaded:\n${fileInfos.join('\n\n')}`;
+    }
     
-    return `Files uploaded:\n${fileInfos.join('\n\n')}`;
+    return systemPrompt;
   }
 
   private buildOpenAIMessages(conversationHistory: any[], currentMessage: string, systemPrompt: string): any[] {
@@ -166,7 +211,7 @@ export class AIService {
   }
 
   private async callOpenAI(message: string, conversationHistory: any[], emojiTags: string[], files: string[], fileContents: (string | null)[], model: AiModel, startTime: number): Promise<AIResponse> {
-    const systemPrompt = this.buildSystemPrompt(emojiTags, files, fileContents);
+    const systemPrompt = await this.buildSystemPrompt(emojiTags, files, fileContents, model);
     const messages = this.buildOpenAIMessages(conversationHistory, message, systemPrompt);
     
     const response = await openai.chat.completions.create({
@@ -193,7 +238,7 @@ export class AIService {
   }
 
   private async callAnthropic(message: string, conversationHistory: any[], emojiTags: string[], files: string[], fileContents: (string | null)[], model: AiModel, startTime: number): Promise<AIResponse> {
-    const systemPrompt = this.buildSystemPrompt(emojiTags, files, fileContents);
+    const systemPrompt = await this.buildSystemPrompt(emojiTags, files, fileContents, model);
     const messages = this.buildAnthropicMessages(conversationHistory, message);
     
     const apiCall: any = {

@@ -1,14 +1,15 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Settings, RefreshCw, Scale, TrendingUp, Plus } from "lucide-react";
+import { Settings, RefreshCw, Scale, TrendingUp, Plus, BookOpen } from "lucide-react";
 import { AiModel } from "@shared/schema";
 
 interface ModelPanelProps {
   aiModels: AiModel[];
+  onOpenKnowledgeBase?: () => void;
 }
 
-export default function ModelPanel({ aiModels }: ModelPanelProps) {
+export default function ModelPanel({ aiModels, onOpenKnowledgeBase }: ModelPanelProps) {
   const getModelStatus = (model: AiModel) => {
     return model.isActive ? "Active" : "Inactive";
   };
@@ -32,7 +33,18 @@ export default function ModelPanel({ aiModels }: ModelPanelProps) {
     <div className="w-64 bg-card border-l border-border flex flex-col">
       {/* Model Panel Header */}
       <div className="p-4 border-b border-border">
-        <h3 className="text-lg font-semibold text-foreground">AI Models</h3>
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-lg font-semibold text-foreground">AI Models</h3>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onOpenKnowledgeBase}
+            className="flex items-center gap-2"
+          >
+            <BookOpen className="h-4 w-4" />
+            Knowledge
+          </Button>
+        </div>
         <p className="text-sm text-muted-foreground">Managing conversation responses</p>
       </div>
 

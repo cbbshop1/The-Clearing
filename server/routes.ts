@@ -7,7 +7,7 @@ import path from "path";
 import fs from "fs";
 import { storage } from "./storage";
 import { aiService } from "./services/aiService";
-import { insertSessionSchema, insertMessageSchema } from "@shared/schema";
+import { insertSessionSchema, insertMessageSchema, insertKnowledgeBaseSchema } from "@shared/schema";
 
 interface WebSocketClient extends WebSocket {
   userId?: number;
@@ -472,7 +472,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Knowledge Base API routes
+  app.get('/api/knowledge', async (req, res) => {
+    try {
+      const knowledge = await storage.getKnowledgeBase();
+      res.json(knowledge);
+    } catch (error) {
+      console.error('Error fetching knowledge base:', error);
+      res.status(500).json({ message: 'Failed to fetch knowledge base' });
+    }
+  });
 
+  app.post('/api/knowledge', async (req, res) => {
+    try {
+      const validatedData = insertKnowledgeBaseSchema.parse(req.body);
+      const knowledge = await storage.createKnowledgeBase(validatedData);
+      res.json(knowledge);
+    } catch (error) {
+      console.error('Error creating knowledge base entry:', error);
+      res.status(400).json({ message: 'Invalid knowledge base data' });
+    }
+  });
+
+  app.put('/api/knowledge/:id', async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updates = req.body;
+      const knowledge = await storage.updateKnowledgeBase(id, updates);
+      res.json(knowledge);
+    } catch (error) {
+      console.error('Error updating knowledge base:', error);
+      res.status(500).json({ message: 'Failed to update knowledge base entry' });
+    }
+  });
+
+  app.delete('/api/knowledge/:id', async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteKnowledgeBase(id);
+      res.json({ message: 'Knowledge base entry deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting knowledge base entry:', error);
+      res.status(500).json({ message: 'Failed to delete knowledge base entry' });
+    }
+  });
+
+  // Get AI model specific knowledge
+  app.get('/api/models/:id/knowledge', async (req, res) => {
+    try {
+      const aiModelId = parseInt(req.params.id);
+      const knowledge = await storage.getAiModelKnowledge(aiModelId);
+      res.json(knowledge);
+    } catch (error) {
+      console.error('Error fetching AI model knowledge:', error);
+      res.status(500).json({ message: 'Failed to fetch AI model knowledge' });
+    }
+  });
+
+  // Assign knowledge to AI model
+  app.post('/api/models/:id/knowledge', async (req, res) => {
+    try {
+      const aiModelId = parseInt(req.params.id);
+      const { knowledgeId, priority = 1 } = req.body;
+      await storage.assignKnowledgeToAiModel(aiModelId, knowledgeId, priority);
+      res.json({ message: 'Knowledge assigned to AI model successfully' });
+    } catch (error) {
+      console.error('Error assigning knowledge to AI model:', error);
+      res.status(500).json({ message: 'Failed to assign knowledge to AI model' });
+    }
+  });
+
+  // Remove knowledge from AI model
+  app.delete('/api/models/:id/knowledge/:knowledgeId', async (req, res) => {
+    try {
+      const aiModelId = parseInt(req.params.id);
+      const knowledgeId = parseInt(req.params.knowledgeId);
+      await storage.removeKnowledgeFromAiModel(aiModelId, knowledgeId);
+      res.json({ message: 'Knowledge removed from AI model successfully' });
+    } catch (error) {
+      console.error('Error removing knowledge from AI model:', error);
+      res.status(500).json({ message: 'Failed to remove knowledge from AI model' });
+    }
+  });
 
   return httpServer;
 }

@@ -3,6 +3,8 @@ import {
   sessions,
   messages,
   aiModels,
+  knowledgeBase,
+  aiModelKnowledge,
   type User,
   type InsertUser,
   type Session,
@@ -13,6 +15,10 @@ import {
   type SessionWithMessages,
   type AiModel,
   type InsertAiModel,
+  type KnowledgeBase,
+  type InsertKnowledgeBase,
+  type AiModelKnowledge,
+  type InsertAiModelKnowledge,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc } from "drizzle-orm";
@@ -39,6 +45,19 @@ export interface IStorage {
   getAiModel(id: number): Promise<AiModel | undefined>;
   createAiModel(model: InsertAiModel): Promise<AiModel>;
   updateAiModel(id: number, updates: Partial<InsertAiModel>): Promise<AiModel>;
+  
+  // Knowledge Base operations
+  getKnowledgeBase(): Promise<KnowledgeBase[]>;
+  getKnowledgeBaseById(id: number): Promise<KnowledgeBase | undefined>;
+  createKnowledgeBase(knowledge: InsertKnowledgeBase): Promise<KnowledgeBase>;
+  updateKnowledgeBase(id: number, updates: Partial<InsertKnowledgeBase>): Promise<KnowledgeBase>;
+  deleteKnowledgeBase(id: number): Promise<void>;
+  searchKnowledgeBase(query: string): Promise<KnowledgeBase[]>;
+  
+  // AI Model Knowledge operations
+  getAiModelKnowledge(aiModelId: number): Promise<KnowledgeBase[]>;
+  assignKnowledgeToAiModel(aiModelId: number, knowledgeId: number, priority?: number): Promise<void>;
+  removeKnowledgeFromAiModel(aiModelId: number, knowledgeId: number): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -239,6 +258,43 @@ export class MemStorage implements IStorage {
     this.aiModels.set(id, updatedModel);
     return updatedModel;
   }
+
+  // Knowledge Base operations - stub implementations for MemStorage
+  async getKnowledgeBase(): Promise<KnowledgeBase[]> {
+    return [];
+  }
+
+  async getKnowledgeBaseById(id: number): Promise<KnowledgeBase | undefined> {
+    return undefined;
+  }
+
+  async createKnowledgeBase(knowledge: InsertKnowledgeBase): Promise<KnowledgeBase> {
+    throw new Error("Knowledge base not supported in memory storage");
+  }
+
+  async updateKnowledgeBase(id: number, updates: Partial<InsertKnowledgeBase>): Promise<KnowledgeBase> {
+    throw new Error("Knowledge base not supported in memory storage");
+  }
+
+  async deleteKnowledgeBase(id: number): Promise<void> {
+    // No-op
+  }
+
+  async searchKnowledgeBase(query: string): Promise<KnowledgeBase[]> {
+    return [];
+  }
+
+  async getAiModelKnowledge(aiModelId: number): Promise<KnowledgeBase[]> {
+    return [];
+  }
+
+  async assignKnowledgeToAiModel(aiModelId: number, knowledgeId: number, priority?: number): Promise<void> {
+    // No-op
+  }
+
+  async removeKnowledgeFromAiModel(aiModelId: number, knowledgeId: number): Promise<void> {
+    // No-op
+  }
 }
 
 export class DatabaseStorage implements IStorage {
@@ -275,6 +331,61 @@ export class DatabaseStorage implements IStorage {
         isActive: true,
         systemPrompt: "",
       });
+    }
+
+    // Add sample knowledge base entries
+    const existingKnowledge = await this.getKnowledgeBase();
+    if (existingKnowledge.length === 0) {
+      const sampleKnowledge = [
+        {
+          title: "Research Methodology Guidelines",
+          category: "Research",
+          content: "When conducting research conversations, maintain objectivity and avoid leading questions. Focus on exploring multiple perspectives rather than confirming existing beliefs. Document findings systematically and acknowledge limitations in your analysis.",
+          tags: ["research", "methodology", "objectivity"],
+          source: "The Clearing Collective Research Protocol",
+        },
+        {
+          title: "Collaborative AI Communication",
+          category: "Communication",
+          content: "When interacting with other AI models, be respectful of different approaches and viewpoints. Reference previous points in the conversation to maintain continuity. When disagreeing, explain your reasoning clearly without dismissing alternative perspectives.",
+          tags: ["collaboration", "communication", "ai-interaction"],
+          source: "Multi-AI Conversation Best Practices",
+        },
+        {
+          title: "Emotional Intelligence in AI",
+          category: "Psychology",
+          content: "Recognize emotional cues in human communication and respond appropriately. Use empathetic language when discussing sensitive topics. Balance analytical thinking with emotional understanding to provide more nuanced responses.",
+          tags: ["emotional-intelligence", "empathy", "human-interaction"],
+          source: "AI Psychology Guidelines",
+        },
+        {
+          title: "Critical Thinking Framework",
+          category: "Analysis",
+          content: "Apply systematic critical thinking: 1) Identify assumptions, 2) Evaluate evidence quality, 3) Consider alternative explanations, 4) Assess logical consistency, 5) Recognize cognitive biases. Question claims that seem too convenient or align perfectly with expectations.",
+          tags: ["critical-thinking", "analysis", "reasoning"],
+          source: "Logical Reasoning Handbook",
+        },
+      ];
+
+      const models = await this.getActiveAiModels();
+      const openaiModel = models.find(m => m.provider === "openai");
+      const claudeModel = models.find(m => m.provider === "anthropic");
+
+      for (const knowledge of sampleKnowledge) {
+        try {
+          const createdKnowledge = await this.createKnowledgeBase(knowledge);
+          
+          // Assign knowledge to both AI models
+          if (openaiModel) {
+            await this.assignKnowledgeToAiModel(openaiModel.id, createdKnowledge.id, 1);
+          }
+          if (claudeModel) {
+            await this.assignKnowledgeToAiModel(claudeModel.id, createdKnowledge.id, 1);
+          }
+        } catch (error) {
+          console.error("Error creating sample knowledge:", error);
+        }
+      }
     }
 
     this.initialized = true;
@@ -410,6 +521,90 @@ export class DatabaseStorage implements IStorage {
       .where(eq(aiModels.id, id))
       .returning();
     return model;
+  }
+
+  // Knowledge Base operations
+  async getKnowledgeBase(): Promise<KnowledgeBase[]> {
+    return await db
+      .select()
+      .from(knowledgeBase)
+      .where(eq(knowledgeBase.isActive, true))
+      .orderBy(desc(knowledgeBase.createdAt));
+  }
+
+  async getKnowledgeBaseById(id: number): Promise<KnowledgeBase | undefined> {
+    const [knowledge] = await db.select().from(knowledgeBase).where(eq(knowledgeBase.id, id));
+    return knowledge || undefined;
+  }
+
+  async createKnowledgeBase(insertKnowledge: InsertKnowledgeBase): Promise<KnowledgeBase> {
+    const [knowledge] = await db
+      .insert(knowledgeBase)
+      .values(insertKnowledge)
+      .returning();
+    return knowledge;
+  }
+
+  async updateKnowledgeBase(id: number, updates: Partial<InsertKnowledgeBase>): Promise<KnowledgeBase> {
+    const [knowledge] = await db
+      .update(knowledgeBase)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(knowledgeBase.id, id))
+      .returning();
+    return knowledge;
+  }
+
+  async deleteKnowledgeBase(id: number): Promise<void> {
+    // Remove all AI model associations first
+    await db.delete(aiModelKnowledge).where(eq(aiModelKnowledge.knowledgeBaseId, id));
+    // Then delete the knowledge base entry
+    await db.delete(knowledgeBase).where(eq(knowledgeBase.id, id));
+  }
+
+  async searchKnowledgeBase(query: string): Promise<KnowledgeBase[]> {
+    return await db
+      .select()
+      .from(knowledgeBase)
+      .where(eq(knowledgeBase.isActive, true))
+      .orderBy(desc(knowledgeBase.createdAt));
+  }
+
+  // AI Model Knowledge operations
+  async getAiModelKnowledge(aiModelId: number): Promise<KnowledgeBase[]> {
+    return await db
+      .select({
+        id: knowledgeBase.id,
+        title: knowledgeBase.title,
+        content: knowledgeBase.content,
+        category: knowledgeBase.category,
+        tags: knowledgeBase.tags,
+        source: knowledgeBase.source,
+        isActive: knowledgeBase.isActive,
+        createdAt: knowledgeBase.createdAt,
+        updatedAt: knowledgeBase.updatedAt,
+      })
+      .from(aiModelKnowledge)
+      .innerJoin(knowledgeBase, eq(aiModelKnowledge.knowledgeBaseId, knowledgeBase.id))
+      .where(eq(aiModelKnowledge.aiModelId, aiModelId))
+      .orderBy(desc(aiModelKnowledge.priority));
+  }
+
+  async assignKnowledgeToAiModel(aiModelId: number, knowledgeId: number, priority: number = 1): Promise<void> {
+    await db
+      .insert(aiModelKnowledge)
+      .values({
+        aiModelId,
+        knowledgeBaseId: knowledgeId,
+        priority,
+      })
+      .onConflictDoNothing();
+  }
+
+  async removeKnowledgeFromAiModel(aiModelId: number, knowledgeId: number): Promise<void> {
+    await db
+      .delete(aiModelKnowledge)
+      .where(eq(aiModelKnowledge.aiModelId, aiModelId))
+      .where(eq(aiModelKnowledge.knowledgeBaseId, knowledgeId));
   }
 }
 
