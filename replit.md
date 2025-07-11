@@ -143,6 +143,9 @@ This is a full-stack web application that provides a platform for human-moderate
 - July 11, 2025: Created Knowledge Base management interface with full CRUD operations
 - July 11, 2025: AI models now reference assigned knowledge in conversations for more informed responses
 - July 11, 2025: Added sample knowledge base entries for research methodology, communication, and critical thinking
+- July 11, 2025: Fixed Knowledge Base API integration - corrected apiRequest function parameter format
+- July 11, 2025: Fixed knowledge assignment workflow - new knowledge entries are now properly assigned to AI models
+- July 11, 2025: AI models now have full access to both default and custom knowledge base entries during conversations
 
 ## User Preferences
 
