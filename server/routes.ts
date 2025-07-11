@@ -49,6 +49,9 @@ const upload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Initialize database with default data
+  await storage.initialize();
+  
   const httpServer = createServer(app);
   
   // WebSocket server for real-time chat

@@ -134,6 +134,10 @@ This is a full-stack web application that provides a platform for human-moderate
 - July 06, 2025: Support for text-based file types (.txt, .md, .json, .csv, .js, .ts, .html, .css, etc.)
 - July 06, 2025: Removed artificial file size restrictions per user's research requirements
 - July 06, 2025: Confirmed file content reading working correctly - AI models now read and analyze full text file content
+- July 07, 2025: Implemented persistent PostgreSQL database storage to replace in-memory storage
+- July 07, 2025: Fixed scroll bar reset issue in chat interface for better user experience
+- July 07, 2025: Added DatabaseStorage class with full CRUD operations for sessions, messages, users, and AI models
+- July 07, 2025: Conversations now persist between app restarts and crashes - no more data loss
 
 ## User Preferences
 
