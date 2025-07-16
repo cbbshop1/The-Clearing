@@ -157,9 +157,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return false;
       });
       
-      // Get session with conversation history
+      // Get session with conversation history (exclude the current user message to avoid duplication)
       const session = await storage.getSession(sessionId);
-      const conversationHistory = session?.messages || [];
+      const allMessages = session?.messages || [];
+      const conversationHistory = allMessages.filter(msg => msg.id !== userMessage.id);
       
       // Debug: Log the conversation history being sent to AI
       console.log('Number of messages in conversation history:', conversationHistory.length);
