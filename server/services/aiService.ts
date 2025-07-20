@@ -273,8 +273,14 @@ export class AIService {
   }
 
   private async callAnthropic(message: string, conversationHistory: any[], emojiTags: string[], files: string[], fileContents: (string | null)[], model: AiModel, startTime: number): Promise<AIResponse> {
+    console.log("🎭 CLAUDE: Starting Anthropic API call...");
+    
     const systemPrompt = await this.buildSystemPrompt(emojiTags, files, fileContents, model);
     const messages = this.buildAnthropicMessages(conversationHistory, message);
+    
+    console.log("🎭 CLAUDE: System prompt length:", systemPrompt.length);
+    console.log("🎭 CLAUDE: Messages array length:", messages.length);
+    console.log("🎭 CLAUDE: Messages:", JSON.stringify(messages, null, 2));
     
     const apiCall: any = {
       model: DEFAULT_MODEL_STR, // "claude-sonnet-4-20250514"
@@ -285,12 +291,18 @@ export class AIService {
     // Always add system prompt (includes Relational Codex + knowledge + files)
     if (systemPrompt && systemPrompt.trim()) {
       apiCall.system = systemPrompt;
+      console.log("🎭 CLAUDE: Added system prompt to API call");
     }
     
+    console.log("🎭 CLAUDE: Making API call with model:", DEFAULT_MODEL_STR);
     const response = await anthropic.messages.create(apiCall);
+    console.log("🎭 CLAUDE: Received response, processing...");
 
     const content = response.content && response.content[0] && response.content[0].type === "text" ? response.content[0].text : "";
     const responseTime = Date.now() - startTime;
+    
+    console.log("🎭 CLAUDE: Response content length:", content.length);
+    console.log("🎭 CLAUDE: Response time:", responseTime + "ms");
     
     return {
       content,
