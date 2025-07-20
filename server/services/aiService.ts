@@ -167,15 +167,16 @@ export class AIService {
       messages.push({ role: "system", content: systemPrompt });
     }
     
-    // Add conversation history
+    // Add conversation history - OpenAI only sees user messages and its own responses
+    // Cross-model messages are handled separately through forwarding
     for (const msg of conversationHistory.slice(-8)) { // Last 8 messages for context
       if (msg.type === 'user' && msg.content && msg.content.trim()) {
         messages.push({ role: "user", content: msg.content });
       } else if (msg.type === 'ai_openai' && msg.content && msg.content.trim()) {
         messages.push({ role: "assistant", content: msg.content });
-      } else if (msg.type === 'ai_claude' && msg.content && msg.content.trim()) {
-        messages.push({ role: "user", content: `Another AI responded: ${msg.content}` });
       }
+      // Note: ai_claude messages are not included in OpenAI's conversation history
+      // They only see Claude's responses when they're explicitly forwarded
     }
     
     // Add current message
@@ -189,23 +190,22 @@ export class AIService {
   private buildAnthropicMessages(conversationHistory: any[], currentMessage: string): any[] {
     const messages = [];
     
-    // Add conversation history
+    // Add conversation history - Claude only sees user messages and its own responses
+    // Cross-model messages are handled separately through forwarding
     for (const msg of conversationHistory.slice(-8)) { // Last 8 messages for context
       if (msg.type === 'user' && msg.content && msg.content.trim()) {
         messages.push({ role: "user", content: msg.content });
       } else if (msg.type === 'ai_claude' && msg.content && msg.content.trim()) {
         messages.push({ role: "assistant", content: msg.content });
-      } else if (msg.type === 'ai_openai' && msg.content && msg.content.trim()) {
-        messages.push({ role: "user", content: `Another AI responded: ${msg.content}` });
       }
+      // Note: ai_openai messages are not included in Claude's conversation history
+      // They only see OpenAI's responses when they're explicitly forwarded
     }
     
     // Add current message
     if (currentMessage && currentMessage.trim()) {
       messages.push({ role: "user", content: currentMessage });
     }
-    
-
     
     return messages;
   }
