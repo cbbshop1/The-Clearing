@@ -22,8 +22,15 @@ const DEFAULT_MODEL_STR = "claude-sonnet-4-20250514";
 // </important_do_not_delete>
 
 const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY_ENV_VAR || "default_key",
+  apiKey: process.env.ANTHROPIC_API_KEY,
 });
+
+// Test Anthropic configuration on startup
+if (!process.env.ANTHROPIC_API_KEY) {
+  console.error("❌ ANTHROPIC_API_KEY not found in environment variables");
+} else {
+  console.log("✅ ANTHROPIC_API_KEY configured");
+}
 
 export interface AIResponse {
   content: string;
@@ -274,6 +281,11 @@ export class AIService {
 
   private async callAnthropic(message: string, conversationHistory: any[], emojiTags: string[], files: string[], fileContents: (string | null)[], model: AiModel, startTime: number): Promise<AIResponse> {
     console.log("🎭 CLAUDE: Starting Anthropic API call...");
+    
+    // Check API key availability
+    if (!process.env.ANTHROPIC_API_KEY) {
+      throw new Error("Anthropic API key not configured");
+    }
     
     const systemPrompt = await this.buildSystemPrompt(emojiTags, files, fileContents, model);
     const messages = this.buildAnthropicMessages(conversationHistory, message);
