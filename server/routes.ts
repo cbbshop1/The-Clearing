@@ -67,6 +67,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     ws.on('message', async (message) => {
       try {
         const data = JSON.parse(message.toString());
+        console.log('🔌 WEBSOCKET RECEIVED:', data.type, data.sessionId ? `session:${data.sessionId}` : '', data.content ? data.content.substring(0, 30) + '...' : '');
         
         switch (data.type) {
           case 'join_session':
@@ -119,6 +120,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   async function handleSendMessage(data: any, ws: WebSocketClient) {
+    console.log('💬 RECEIVED MESSAGE:', { sessionId: data.sessionId, content: data.content?.substring(0, 50), targetModels: data.targetModels || 'both' });
     try {
       const { sessionId, content, emojiTags, userId, targetModels = 'both', files = [] } = data;
       
