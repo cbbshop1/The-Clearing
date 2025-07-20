@@ -40,9 +40,12 @@ export interface AIResponse {
 export class AIService {
   private async getRelationalCodexContent(): Promise<string> {
     try {
+      console.log("Loading Relational Codex...");
       const filename = await this.findRelationalCodexFile();
+      console.log("Found Codex filename:", filename);
       if (filename) {
         const content = await this.readFileContent(`uploads/${filename}`);
+        console.log("Codex content length:", content ? content.length : 0);
         if (content) {
           return `\n## Foundational Framework: Relational Codex v2.5\n\n${content}\n\n---\n\n`;
         }
@@ -161,7 +164,9 @@ export class AIService {
     let systemPrompt = "";
     
     // Add Relational Codex v2.5 as foundational context for all AI models
-    systemPrompt += await this.getRelationalCodexContent();
+    const codexContent = await this.getRelationalCodexContent();
+    console.log("Adding Codex content, length:", codexContent.length);
+    systemPrompt += codexContent;
     
     // Add AI model's personal knowledge base
     if (model) {
@@ -192,7 +197,7 @@ export class AIService {
   private buildOpenAIMessages(conversationHistory: any[], currentMessage: string, systemPrompt: string): any[] {
     const messages = [];
     
-    // Only add system prompt if it has content (for files)
+    // Always add system prompt (includes Relational Codex + knowledge + files)
     if (systemPrompt && systemPrompt.trim()) {
       messages.push({ role: "system", content: systemPrompt });
     }
@@ -277,7 +282,7 @@ export class AIService {
       messages,
     };
     
-    // Only add system prompt if it has content (for files)
+    // Always add system prompt (includes Relational Codex + knowledge + files)
     if (systemPrompt && systemPrompt.trim()) {
       apiCall.system = systemPrompt;
     }
