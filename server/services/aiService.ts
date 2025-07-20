@@ -392,7 +392,7 @@ export class AIService {
     
     try {
       const response = await deepseekOpenai.chat.completions.create({
-        model: model.model || "deepseek-v3",
+        model: model.model || "deepseek-chat",
         messages,
         max_tokens: 2000,
         temperature: 0.7,
@@ -403,7 +403,7 @@ export class AIService {
       
       return {
         content,
-        model: model.model || "deepseek-v3",
+        model: model.model || "deepseek-chat",
         provider: 'deepseek',
         emojiTags: emojiTags || [],
         metadata: {
