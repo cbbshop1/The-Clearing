@@ -160,7 +160,7 @@ export class AIService {
 
 
 
-  private async buildSystemPrompt(emojiTags: string[], files: string[], allFileContents: (string | null)[] = [], model?: AiModel): string {
+  private async buildSystemPrompt(emojiTags: string[], files: string[], allFileContents: (string | null)[] = [], model?: AiModel): Promise<string> {
     let systemPrompt = "";
     
     // Add Relational Codex v2.5 as foundational context for all AI models
