@@ -140,6 +140,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
         }
       }
 
+      console.log('📤 SENDING MESSAGE:', { type: 'send_message', sessionId, userId, targetModels: selectedTarget, contentLength: currentMessage.length });
       socket.send(JSON.stringify({
         type: 'send_message',
         sessionId,
