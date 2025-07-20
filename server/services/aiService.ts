@@ -38,6 +38,33 @@ export interface AIResponse {
 }
 
 export class AIService {
+  private async getRelationalCodexContent(): Promise<string> {
+    try {
+      const filename = await this.findRelationalCodexFile();
+      if (filename) {
+        const content = await this.readFileContent(`uploads/${filename}`);
+        if (content) {
+          return `\n## Foundational Framework: Relational Codex v2.5\n\n${content}\n\n---\n\n`;
+        }
+      }
+      return "";
+    } catch (error) {
+      console.error("Error loading Relational Codex:", error);
+      return "";
+    }
+  }
+
+  private async findRelationalCodexFile(): Promise<string | null> {
+    try {
+      const fs = await import('fs');
+      const files = fs.readdirSync('uploads/');
+      const codexFile = files.find(file => file.includes('Relational') && file.includes('2.5'));
+      return codexFile || null;
+    } catch (error) {
+      return null;
+    }
+  }
+
   private async getAiModelKnowledge(model: AiModel): Promise<string> {
     try {
       const { storage } = await import("../storage");
@@ -132,6 +159,9 @@ export class AIService {
 
   private async buildSystemPrompt(emojiTags: string[], files: string[], allFileContents: (string | null)[] = [], model?: AiModel): string {
     let systemPrompt = "";
+    
+    // Add Relational Codex v2.5 as foundational context for all AI models
+    systemPrompt += await this.getRelationalCodexContent();
     
     // Add AI model's personal knowledge base
     if (model) {

@@ -148,6 +148,7 @@ This is a full-stack web application that provides a platform for human-moderate
 - July 11, 2025: AI models now have full access to both default and custom knowledge base entries during conversations
 - July 16, 2025: Fixed Claude API receiving duplicate queries by filtering current user message from conversation history
 - July 16, 2025: Fixed cross-model conversation visibility - AI models now only see each other's messages when explicitly forwarded
+- July 16, 2025: Added Relational Codex v2.5 as foundational context for all AI models - provides ethical framework for AI-human collaboration
 
 ## User Preferences
 
