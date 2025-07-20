@@ -150,12 +150,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get active AI models and filter based on target
       const activeModels = await storage.getActiveAiModels();
+      console.log('📋 AVAILABLE MODELS:', activeModels.map(m => `${m.name} (${m.provider})`));
+      console.log('📋 TARGET MODELS:', targetModels);
+      
       const filteredModels = activeModels.filter(model => {
         if (targetModels === 'both') return true;
         if (targetModels === 'openai') return model.provider === 'openai';
         if (targetModels === 'claude') return model.provider === 'anthropic';
         return false;
       });
+      
+      console.log('📋 FILTERED MODELS:', filteredModels.map(m => `${m.name} (${m.provider})`));
       
       // Get session with conversation history (exclude the current user message to avoid duplication)
       const session = await storage.getSession(sessionId);
@@ -166,7 +171,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('Number of messages in conversation history:', conversationHistory.length);
 
       // Generate AI responses
+      console.log('🚀 PROCESSING', filteredModels.length, 'AI MODELS...');
       for (const model of filteredModels) {
+        console.log(`🤖 CALLING MODEL: ${model.name} (${model.provider})`);
         try {
           const aiResponse = await aiService.generateResponse(
             enhancedContent,
@@ -175,6 +182,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             model,
             files || []
           );
+          console.log(`✅ SUCCESS: ${model.name} responded with ${aiResponse.content.length} characters`);
 
           // Create AI message with specific type based on provider
           const messageType = model.provider === 'openai' ? 'ai_openai' : 'ai_claude';
