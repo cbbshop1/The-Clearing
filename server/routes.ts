@@ -159,6 +159,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (targetModels === 'both') return true;
         if (targetModels === 'openai') return model.provider === 'openai';
         if (targetModels === 'claude') return model.provider === 'anthropic';
+        if (targetModels === 'deepseek') return model.provider === 'deepseek';
         return false;
       });
       
@@ -187,7 +188,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`✅ SUCCESS: ${model.name} responded with ${aiResponse.content.length} characters`);
 
           // Create AI message with specific type based on provider
-          const messageType = model.provider === 'openai' ? 'ai_openai' : 'ai_claude';
+          const messageType = model.provider === 'openai' ? 'ai_openai' : 
+                              model.provider === 'anthropic' ? 'ai_claude' : 
+                              'ai_deepseek';
           const aiMessage = await storage.createMessage({
             sessionId,
             userId: null,
@@ -233,7 +236,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get the target AI model
       const models = await storage.getActiveAiModels();
       const targetModel = models.find(m => 
-        targetProvider === 'openai' ? m.provider === 'openai' : m.provider === 'anthropic'
+        targetProvider === 'openai' ? m.provider === 'openai' : 
+        targetProvider === 'claude' ? m.provider === 'anthropic' : 
+        m.provider === 'deepseek'
       );
       
       if (!targetModel) {
@@ -264,7 +269,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sessionId,
         userId: null,
         content: aiResponse.content,
-        type: targetProvider === 'openai' ? 'ai_openai' : 'ai_claude',
+        type: targetProvider === 'openai' ? 'ai_openai' : 
+              targetProvider === 'claude' ? 'ai_claude' : 
+              'ai_deepseek',
         aiModel: targetModel.name,
         emojiTags: aiResponse.emojiTags,
         metadata: aiResponse.metadata,

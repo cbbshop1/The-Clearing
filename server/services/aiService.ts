@@ -32,6 +32,19 @@ if (!process.env.ANTHROPIC_API_KEY) {
   console.log("✅ ANTHROPIC_API_KEY configured");
 }
 
+// DeepSeek configuration
+const deepseekOpenai = new OpenAI({
+  apiKey: process.env.DEEPSEEK_API_KEY,
+  baseURL: "https://api.deepseek.com/v1"
+});
+
+// Test DeepSeek configuration on startup
+if (!process.env.DEEPSEEK_API_KEY) {
+  console.error("❌ DEEPSEEK_API_KEY not found in environment variables");
+} else {
+  console.log("✅ DEEPSEEK_API_KEY configured");
+}
+
 export interface AIResponse {
   content: string;
   model: string;
@@ -156,6 +169,8 @@ export class AIService {
         return await this.callOpenAI(message, conversationHistory, emojiTags, files, fileContents, model, startTime);
       } else if (model.provider === "anthropic") {
         return await this.callAnthropic(message, conversationHistory, emojiTags, files, fileContents, model, startTime);
+      } else if (model.provider === "deepseek") {
+        return await this.callDeepSeek(message, conversationHistory, emojiTags, files, fileContents, model, startTime);
       } else {
         throw new Error(`Unsupported AI provider: ${model.provider}`);
       }
@@ -359,6 +374,71 @@ export class AIService {
     ).length;
     
     return Math.min(10, (overlap / Math.max(contentWords.length, promptWords.length)) * 100);
+  }
+
+  private async callDeepSeek(message: string, conversationHistory: any[], emojiTags: string[], files: string[], fileContents: (string | null)[], model: AiModel, startTime: number): Promise<AIResponse> {
+    console.log("🧠 DEEPSEEK: Starting DeepSeek API call...");
+    
+    // Check API key availability
+    if (!process.env.DEEPSEEK_API_KEY) {
+      throw new Error("DeepSeek API key not configured");
+    }
+    
+    const systemPrompt = await this.buildSystemPrompt(emojiTags, files, fileContents, model);
+    const messages = this.buildDeepSeekMessages(conversationHistory, message, systemPrompt);
+    
+    console.log('🧠 DEEPSEEK: Built', messages.length, 'messages for conversation');
+    console.log('🧠 DEEPSEEK: System prompt length:', systemPrompt.length);
+    
+    try {
+      const response = await deepseekOpenai.chat.completions.create({
+        model: model.model || "deepseek-v3",
+        messages,
+        max_tokens: 2000,
+        temperature: 0.7,
+      });
+
+      const content = response.choices[0]?.message?.content || "";
+      console.log('✅ DEEPSEEK: Response received, length:', content.length);
+      
+      return {
+        content,
+        model: model.model || "deepseek-v3",
+        provider: 'deepseek',
+        emojiTags: emojiTags || [],
+        metadata: {
+          responseTime: Date.now() - startTime,
+          empathyScore: 0.8,
+          relevanceScore: 0.9,
+        },
+      };
+    } catch (error) {
+      console.error('❌ DEEPSEEK ERROR:', error);
+      throw new Error(`DeepSeek API error: ${error}`);
+    }
+  }
+
+  private buildDeepSeekMessages(conversationHistory: any[], currentMessage: string, systemPrompt: string): any[] {
+    const messages = [];
+    
+    // Always add system prompt (includes Relational Codex + knowledge + files)
+    if (systemPrompt && systemPrompt.trim()) {
+      messages.push({ role: "system", content: systemPrompt });
+    }
+    
+    // Add conversation history - DeepSeek only sees user messages and its own responses
+    for (const msg of conversationHistory.slice(-8)) { // Last 8 messages for context
+      if (msg.type === 'user' && msg.content && msg.content.trim()) {
+        messages.push({ role: "user", content: msg.content });
+      } else if (msg.type === 'ai_deepseek' && msg.content && msg.content.trim()) {
+        messages.push({ role: "assistant", content: msg.content });
+      }
+    }
+    
+    // Add current message
+    messages.push({ role: "user", content: currentMessage });
+    
+    return messages;
   }
 }
 

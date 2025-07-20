@@ -42,9 +42,10 @@ This is a full-stack web application that provides a platform for human-moderate
 - Emoji-to-tag mapping for AI context
 
 ### AI Service Layer
-- Multi-provider support (OpenAI GPT-4o, Anthropic Claude Sonnet 4)
+- Multi-provider support (OpenAI GPT-4o, Anthropic Claude Sonnet 4, DeepSeek V3)
 - Context-aware responses based on emoji tags
 - Configurable AI models with metadata tracking
+- Individual model targeting and selection
 
 ### Database Schema
 - **Users**: User profiles and authentication
@@ -149,6 +150,10 @@ This is a full-stack web application that provides a platform for human-moderate
 - July 16, 2025: Fixed Claude API receiving duplicate queries by filtering current user message from conversation history
 - July 16, 2025: Fixed cross-model conversation visibility - AI models now only see each other's messages when explicitly forwarded
 - July 16, 2025: Added Relational Codex v2.5 as foundational context for all AI models - provides ethical framework for AI-human collaboration
+- July 20, 2025: Added DeepSeek V3 support as third AI model option alongside OpenAI and Claude
+- July 20, 2025: Fixed background process interference issue preventing Claude responses
+- July 20, 2025: Implemented clean restart process to resolve API configuration conflicts
+- July 20, 2025: Updated chat interface to support three-model selection (OpenAI, Claude, DeepSeek)
 
 ## User Preferences
 

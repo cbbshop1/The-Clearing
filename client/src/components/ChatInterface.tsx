@@ -27,7 +27,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [forwardedMessages, setForwardedMessages] = useState<Set<number>>(new Set());
-  const [selectedTarget, setSelectedTarget] = useState<'both' | 'openai' | 'claude'>('both');
+  const [selectedTarget, setSelectedTarget] = useState<'both' | 'openai' | 'claude' | 'deepseek'>('both');
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [fileUploading, setFileUploading] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -242,15 +242,15 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
         <div className="space-y-6">
           {messages.map((message, index) => {
             // Group AI responses that follow each other
-            if (message.type === 'ai_openai' || message.type === 'ai_claude') {
+            if (message.type === 'ai_openai' || message.type === 'ai_claude' || message.type === 'ai_deepseek') {
               const nextMessage = messages[index + 1];
               const isGroupedWithNext = nextMessage && 
-                (nextMessage.type === 'ai_openai' || nextMessage.type === 'ai_claude') &&
+                (nextMessage.type === 'ai_openai' || nextMessage.type === 'ai_claude' || nextMessage.type === 'ai_deepseek') &&
                 nextMessage.type !== message.type;
               
               const prevMessage = messages[index - 1];
               const isGroupedWithPrev = prevMessage && 
-                (prevMessage.type === 'ai_openai' || prevMessage.type === 'ai_claude') &&
+                (prevMessage.type === 'ai_openai' || prevMessage.type === 'ai_claude' || prevMessage.type === 'ai_deepseek') &&
                 prevMessage.type !== message.type;
                 
               if (isGroupedWithNext) {
@@ -259,7 +259,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
                   <div key={`${message.id}-${nextMessage.id}`} className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <div className="text-xs font-medium text-muted-foreground mb-2 sticky top-0 bg-background z-10 pb-1 border-b">
-                        {message.type === 'ai_openai' ? '🤖 OpenAI GPT-4o' : '🎭 Claude'}
+                        {message.type === 'ai_openai' ? '🤖 OpenAI GPT-4o' : message.type === 'ai_claude' ? '🎭 Claude' : '🧠 DeepSeek'}
                       </div>
                       <div className="max-h-80 overflow-y-auto pr-2 space-y-2 animate-in slide-in-from-left-3 duration-500">
                         <MessageBubble 
@@ -271,7 +271,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
                     </div>
                     <div className="space-y-2">
                       <div className="text-xs font-medium text-muted-foreground mb-2 sticky top-0 bg-background z-10 pb-1 border-b">
-                        {nextMessage.type === 'ai_openai' ? '🤖 OpenAI GPT-4o' : '🎭 Claude'}
+                        {nextMessage.type === 'ai_openai' ? '🤖 OpenAI GPT-4o' : nextMessage.type === 'ai_claude' ? '🎭 Claude' : '🧠 DeepSeek'}
                       </div>
                       <div className="max-h-80 overflow-y-auto pr-2 space-y-2 animate-in slide-in-from-right-3 duration-500">
                         <MessageBubble 
@@ -351,6 +351,15 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
             <span>🎭</span>
             <span>Claude</span>
           </Button>
+          <Button
+            variant={selectedTarget === 'deepseek' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setSelectedTarget('deepseek')}
+            className="flex items-center space-x-1"
+          >
+            <span>🧠</span>
+            <span>DeepSeek</span>
+          </Button>
         </div>
         
         {/* File Preview */}
@@ -387,7 +396,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
               value={currentMessage}
               onChange={(e) => setCurrentMessage(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder={`Type your message to ${selectedTarget === 'both' ? 'both models' : selectedTarget === 'openai' ? 'OpenAI GPT-4o' : 'Claude'}...`}
+              placeholder={`Type your message to ${selectedTarget === 'both' ? 'all models' : selectedTarget === 'openai' ? 'OpenAI GPT-4o' : selectedTarget === 'claude' ? 'Claude' : 'DeepSeek'}...`}
               className="resize-none min-h-[48px] pr-24"
               rows={1}
             />
