@@ -47,6 +47,18 @@ const ReflectorPage: React.FC = () => {
     if (sessionId) {
       setCurrentSessionId(sessionId);
     }
+
+    // Prevent window from losing focus
+    const handleBlur = () => {
+      setTimeout(() => window.focus(), 100);
+    };
+    
+    window.addEventListener('blur', handleBlur);
+    
+    // Cleanup
+    return () => {
+      window.removeEventListener('blur', handleBlur);
+    };
   }, []);
 
   // WebSocket connection for real-time updates
@@ -57,10 +69,13 @@ const ReflectorPage: React.FC = () => {
   });
 
   // Fetch ethics data for current session
-  const { data: ethicsData, refetch } = useQuery<EthicsData>({
+  const { data: ethicsData, refetch, isLoading } = useQuery<EthicsData>({
     queryKey: ['/api/sessions', currentSessionId, 'ethics'],
     enabled: !!currentSessionId,
-    refetchInterval: 5000, // Refetch every 5 seconds for live updates
+    refetchInterval: 2000, // Refetch every 2 seconds for faster updates
+    retry: 3,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
   });
 
   // Refetch when new messages arrive
@@ -79,6 +94,23 @@ const ReflectorPage: React.FC = () => {
           <p className="text-sm text-gray-500 mt-2">
             Open this monitor from a chat session to see live ethics analysis.
           </p>
+          <button 
+            onClick={() => window.close()} 
+            className="mt-4 px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+          >
+            Close Window
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="p-6 flex justify-center items-center min-h-screen bg-gray-50">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold mb-4">Ethics Monitor</h2>
+          <p className="text-gray-600">Loading ethics data for session {currentSessionId}...</p>
         </div>
       </div>
     );
@@ -155,9 +187,23 @@ const ReflectorPage: React.FC = () => {
           )}
         </div>
 
-        {/* Live Update Indicator */}
-        <div className="fixed bottom-4 right-4 bg-green-500 text-white px-3 py-2 rounded-full text-sm">
-          🟢 Live Updates Active
+        {/* Live Update Indicator and Controls */}
+        <div className="fixed bottom-4 right-4 space-y-2">
+          <div className="bg-green-500 text-white px-3 py-2 rounded-full text-sm">
+            🟢 Live Updates Active (Session {currentSessionId})
+          </div>
+          <button 
+            onClick={() => refetch()} 
+            className="w-full bg-blue-500 text-white px-3 py-2 rounded text-sm hover:bg-blue-600"
+          >
+            Refresh Now
+          </button>
+          <button 
+            onClick={() => window.close()} 
+            className="w-full bg-red-500 text-white px-3 py-2 rounded text-sm hover:bg-red-600"
+          >
+            Close Monitor
+          </button>
         </div>
       </div>
     </div>

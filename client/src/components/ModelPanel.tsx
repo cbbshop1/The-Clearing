@@ -17,7 +17,21 @@ export default function ModelPanel({ aiModels, onOpenKnowledgeBase, currentSessi
 
   const openEthicsReflector = () => {
     const url = currentSessionId ? `/reflector?session=${currentSessionId}` : '/reflector';
-    window.open(url, 'ethics-reflector', 'width=800,height=900,scrollbars=yes,resizable=yes');
+    // Store session ID in localStorage for the reflector window
+    if (currentSessionId) {
+      localStorage.setItem('currentSessionId', currentSessionId.toString());
+    }
+    const ethicsWindow = window.open(url, 'ethics-reflector', 'width=900,height=700,scrollbars=yes,resizable=yes,location=no,menubar=no,toolbar=no');
+    
+    // Keep the window focused and prevent it from closing
+    if (ethicsWindow) {
+      ethicsWindow.focus();
+      // Prevent the window from being closed accidentally
+      ethicsWindow.addEventListener('beforeunload', (e) => {
+        e.preventDefault();
+        return 'Ethics Monitor will close. Continue?';
+      });
+    }
   };
 
   const getModelColor = (provider: string) => {
