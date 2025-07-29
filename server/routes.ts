@@ -7,6 +7,7 @@ import path from "path";
 import fs from "fs";
 import { storage } from "./storage";
 import { aiService } from "./services/aiService";
+import { generateELPReport } from "./services/ethicsService";
 import { insertSessionSchema, insertMessageSchema, insertKnowledgeBaseSchema } from "@shared/schema";
 
 interface WebSocketClient extends WebSocket {
@@ -129,7 +130,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? `${content}\n\n[FILES UPLOADED: ${files.map((f: string) => f.includes('/') ? f.split('/').pop() : f).join(', ')}]`
         : content;
 
-      // Create user message
+      // Generate ELP report for user message
+      const userELPReport = generateELPReport({
+        id: Date.now(), // Temporary ID for analysis
+        speaker: 'User',
+        message: enhancedContent
+      });
+
+      // Create user message with ethics metadata
       const userMessage = await storage.createMessage({
         sessionId,
         userId,
@@ -138,7 +146,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         emojiTags: emojiTags || [],
         files: files || [],
         targetModels: targetModels || 'both',
-        metadata: {},
+        metadata: {
+          elp: userELPReport
+        },
       });
 
       // Broadcast user message to all clients in session
@@ -210,6 +220,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           );
           console.log(`✅ SUCCESS: ${model.name} responded with ${aiResponse.content.length} characters`);
 
+          // Generate ELP report for AI message
+          const aiELPReport = generateELPReport({
+            id: Date.now(), // Temporary ID for analysis
+            speaker: model.name,
+            message: aiResponse.content
+          });
+
           // Create AI message with specific type based on provider
           const messageType = model.provider === 'openai' ? 'ai_openai' : 
                               model.provider === 'anthropic' ? 'ai_claude' : 
@@ -221,7 +238,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             type: messageType,
             aiModel: model.name,
             emojiTags: aiResponse.emojiTags,
-            metadata: aiResponse.metadata,
+            metadata: {
+              ...aiResponse.metadata,
+              elp: aiELPReport
+            },
           });
 
           // Broadcast AI message to all clients in session
@@ -309,6 +329,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         targetModel
       );
 
+      // Generate ELP report for forwarded AI message
+      const forwardELPReport = generateELPReport({
+        id: Date.now(),
+        speaker: targetModel.name,
+        message: aiResponse.content
+      });
+
       // Create AI message
       const aiMessage = await storage.createMessage({
         sessionId,
@@ -319,7 +346,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
               'ai_deepseek',
         aiModel: targetModel.name,
         emojiTags: aiResponse.emojiTags,
-        metadata: aiResponse.metadata,
+        metadata: {
+          ...aiResponse.metadata,
+          elp: forwardELPReport
+        },
       });
 
       // Broadcast AI message to all clients in session
@@ -615,6 +645,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error removing knowledge from AI model:', error);
       res.status(500).json({ message: 'Failed to remove knowledge from AI model' });
+    }
+  });
+
+  // Ethics Reflection API endpoints
+  app.get('/api/sessions/:id/ethics', async (req, res) => {
+    try {
+      const sessionId = parseInt(req.params.id);
+      const messages = await storage.getMessages(sessionId);
+      
+      // Extract ELP reports from message metadata
+      const ethicsData = messages
+        .filter(msg => msg.metadata?.elp)
+        .map(msg => ({
+          messageId: msg.id,
+          timestamp: msg.createdAt,
+          speaker: msg.type === 'user' ? 'User' : msg.aiModel,
+          type: msg.type,
+          elpReport: msg.metadata.elp
+        }));
+      
+      // Calculate session analytics
+      const { analyzeConversationEthics } = await import('./services/ethicsService');
+      const analytics = analyzeConversationEthics(messages);
+      
+      res.json({
+        sessionId,
+        totalMessages: messages.length,
+        ethicsReports: ethicsData,
+        analytics
+      });
+    } catch (error) {
+      console.error('Error fetching session ethics:', error);
+      res.status(500).json({ message: 'Failed to fetch session ethics data' });
     }
   });
 
