@@ -44,11 +44,21 @@ export const generateELPReport = (turn: { id: number; speaker: string; message: 
 };
 
 const EthicsReflectionBar: React.FC<{ report?: ELPReport }> = ({ report }) => {
-  const elpReport: ELPReport = report ?? generateELPReport({
+  const fallbackTurn = {
     id: 3,
     speaker: "Claude",
     message: "What are we protecting most — the child or the signal?"
-  });
+  };
+  
+  const elpReport: ELPReport = report ?? generateELPReport(fallbackTurn);
+
+  // Log what we're evaluating
+  if (report) {
+    console.log('Evaluating real report:', report);
+  } else {
+    console.log('Evaluating fallback turn:', fallbackTurn.message);
+    console.log('Generated fallback report:', elpReport);
+  }
 
   const {
     speaker,

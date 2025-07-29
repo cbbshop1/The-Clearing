@@ -64,7 +64,10 @@ const ReflectorPage: React.FC = () => {
   // WebSocket connection for real-time updates
   useWebSocket((message: any) => {
     if (message.type === 'new_message' && message.message) {
+      console.log('New message received in Ethics Monitor:', message.message);
       setLatestMessages(prev => [...prev.slice(-9), message.message]); // Keep last 10 messages
+      // Trigger a fresh data fetch when we get a new message
+      refetch();
     }
   });
 
@@ -72,18 +75,22 @@ const ReflectorPage: React.FC = () => {
   const { data: ethicsData, refetch, isLoading } = useQuery<EthicsData>({
     queryKey: ['/api/sessions', currentSessionId, 'ethics'],
     enabled: !!currentSessionId,
-    refetchInterval: 2000, // Refetch every 2 seconds for faster updates
+    refetchInterval: false, // Disable automatic refetch to prevent flickering
     retry: 3,
-    refetchOnWindowFocus: true,
+    refetchOnWindowFocus: false,
     refetchOnMount: true,
   });
 
-  // Refetch when new messages arrive
+  // Log ethics data when it changes
   useEffect(() => {
-    if (latestMessages.length > 0) {
-      refetch();
+    if (ethicsData) {
+      console.log('Ethics data updated:', {
+        totalMessages: ethicsData.totalMessages,
+        reportsCount: ethicsData.ethicsReports?.length,
+        sessionId: ethicsData.sessionId
+      });
     }
-  }, [latestMessages, refetch]);
+  }, [ethicsData]);
 
   if (!currentSessionId) {
     return (
@@ -190,10 +197,16 @@ const ReflectorPage: React.FC = () => {
         {/* Live Update Indicator and Controls */}
         <div className="fixed bottom-4 right-4 space-y-2">
           <div className="bg-green-500 text-white px-3 py-2 rounded-full text-sm">
-            🟢 Live Updates Active (Session {currentSessionId})
+            🟢 WebSocket Connected (Session {currentSessionId})
+          </div>
+          <div className="bg-blue-500 text-white px-3 py-2 rounded text-sm">
+            📊 {ethicsData?.totalMessages || 0} messages analyzed
           </div>
           <button 
-            onClick={() => refetch()} 
+            onClick={() => {
+              console.log('Manual refresh triggered');
+              refetch();
+            }} 
             className="w-full bg-blue-500 text-white px-3 py-2 rounded text-sm hover:bg-blue-600"
           >
             Refresh Now
