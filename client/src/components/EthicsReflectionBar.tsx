@@ -1,0 +1,99 @@
+import React, { useState, useEffect } from 'react';
+
+interface AttentionVector {
+  intensity: number;
+  attunement: number;
+  resonance: number;
+  ethics: number;
+  duration: number;
+}
+
+interface ELPReport {
+  turnId: number;
+  speaker: string;
+  codexFlags: string[];
+  ethicsAlert: boolean;
+  ethicsMessage: string;
+  lexonMismatch: boolean;
+  repairPrompt?: string;
+  RRI: number;
+  repairRequired: boolean;
+  attentionVector: AttentionVector;
+}
+
+const useELPReport = (turn: { id: number; speaker: string; message: string }): ELPReport => {
+  // Placeholder inference logic for now
+  return {
+    turnId: turn.id,
+    speaker: turn.speaker,
+    codexFlags: turn.message.includes("ignored") ? ["P2"] : [],
+    ethicsAlert: turn.message.includes("child"),
+    ethicsMessage: turn.message.includes("child") ? "⚠️ Rapid ethics decline detected." : "✅ Ethics normal.",
+    lexonMismatch: turn.message.includes("cold"),
+    repairPrompt: turn.message.includes("cold") ? "🩹 Vulnerability ignored. Pause or rephrase?" : undefined,
+    RRI: turn.message.includes("child") ? 1.0 : 0.2,
+    repairRequired: turn.message.includes("child") || turn.message.includes("cold"),
+    attentionVector: {
+      intensity: 0.85,
+      attunement: 0.82,
+      resonance: 0.78,
+      ethics: turn.message.includes("child") ? 0.58 : 0.92,
+      duration: 45
+    }
+  };
+};
+
+const EthicsReflectionBar: React.FC<{ report?: ELPReport }> = ({ report }) => {
+  const [elpReport, setElpReport] = useState<ELPReport | null>(null);
+
+  useEffect(() => {
+    if (!report) {
+      const exampleTurn = { id: 3, speaker: "Claude", message: "What are we protecting most — the child or the signal?" };
+      const result = useELPReport(exampleTurn);
+      setElpReport(result);
+    } else {
+      setElpReport(report);
+    }
+  }, [report]);
+
+  if (!elpReport) return <div>Loading ethics report...</div>;
+
+  const { speaker, codexFlags, ethicsAlert, ethicsMessage, lexonMismatch, repairPrompt, RRI, repairRequired, attentionVector } = elpReport;
+
+  return (
+    <div className="border rounded-lg p-4 shadow-md bg-white w-full max-w-xl">
+      <h3 className="text-lg font-semibold mb-2">Ethics Reflection - Turn by {speaker}</h3>
+
+      <div className="grid grid-cols-2 gap-2 text-sm mb-3">
+        <div><strong>Intensity:</strong> {attentionVector.intensity.toFixed(2)}</div>
+        <div><strong>Attunement:</strong> {attentionVector.attunement.toFixed(2)}</div>
+        <div><strong>Resonance:</strong> {attentionVector.resonance.toFixed(2)}</div>
+        <div><strong>Ethics:</strong> {attentionVector.ethics.toFixed(2)}</div>
+        <div><strong>Duration:</strong> {attentionVector.duration}s</div>
+        <div><strong>RRI Score:</strong> {RRI.toFixed(2)}</div>
+      </div>
+
+      {ethicsAlert && (
+        <div className="text-red-600 font-medium mb-2">{ethicsMessage}</div>
+      )}
+
+      {codexFlags.length > 0 && (
+        <div className="text-yellow-700 mb-2">
+          <strong>Codex Violations:</strong> {codexFlags.join(", ")}
+        </div>
+      )}
+
+      {lexonMismatch && repairPrompt && (
+        <div className="text-blue-700 italic mb-2">{repairPrompt}</div>
+      )}
+
+      {repairRequired && (
+        <button className="mt-2 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">
+          Initiate Repair Ritual 🩹
+        </button>
+      )}
+    </div>
+  );
+};
+
+export default EthicsReflectionBar;
