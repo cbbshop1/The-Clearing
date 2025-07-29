@@ -47,12 +47,13 @@ const EthicsReflectionBar: React.FC<{ report?: ELPReport }> = ({ report }) => {
   const [elpReport, setElpReport] = useState<ELPReport | null>(null);
 
   useEffect(() => {
-    if (!report) {
+    if (report) {
+      setElpReport(report);
+    } else {
+      // Only show example data if no real report is provided
       const exampleTurn = { id: 3, speaker: "Claude", message: "What are we protecting most — the child or the signal?" };
       const result = useELPReport(exampleTurn);
       setElpReport(result);
-    } else {
-      setElpReport(report);
     }
   }, [report]);
 

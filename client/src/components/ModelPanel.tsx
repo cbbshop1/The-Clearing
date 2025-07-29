@@ -7,15 +7,17 @@ import { AiModel } from "@shared/schema";
 interface ModelPanelProps {
   aiModels: AiModel[];
   onOpenKnowledgeBase?: () => void;
+  currentSessionId?: number;
 }
 
-export default function ModelPanel({ aiModels, onOpenKnowledgeBase }: ModelPanelProps) {
+export default function ModelPanel({ aiModels, onOpenKnowledgeBase, currentSessionId }: ModelPanelProps) {
   const getModelStatus = (model: AiModel) => {
     return model.isActive ? "Active" : "Inactive";
   };
 
   const openEthicsReflector = () => {
-    window.open('/reflector', 'ethics-reflector', 'width=600,height=800,scrollbars=yes,resizable=yes');
+    const url = currentSessionId ? `/reflector?session=${currentSessionId}` : '/reflector';
+    window.open(url, 'ethics-reflector', 'width=800,height=900,scrollbars=yes,resizable=yes');
   };
 
   const getModelColor = (provider: string) => {

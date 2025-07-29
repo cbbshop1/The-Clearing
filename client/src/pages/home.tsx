@@ -116,6 +116,7 @@ export default function Home() {
         <ModelPanel 
           aiModels={aiModels} 
           onOpenKnowledgeBase={() => setIsKnowledgeBaseOpen(true)}
+          currentSessionId={selectedSessionId || undefined}
         />
       </div>
       
