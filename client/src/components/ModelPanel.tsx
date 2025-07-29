@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Settings, RefreshCw, Scale, TrendingUp, Plus, BookOpen } from "lucide-react";
+import { Settings, RefreshCw, Scale, TrendingUp, Plus, BookOpen, Shield } from "lucide-react";
 import { AiModel } from "@shared/schema";
 
 interface ModelPanelProps {
@@ -12,6 +12,10 @@ interface ModelPanelProps {
 export default function ModelPanel({ aiModels, onOpenKnowledgeBase }: ModelPanelProps) {
   const getModelStatus = (model: AiModel) => {
     return model.isActive ? "Active" : "Inactive";
+  };
+
+  const openEthicsReflector = () => {
+    window.open('/reflector', 'ethics-reflector', 'width=600,height=800,scrollbars=yes,resizable=yes');
   };
 
   const getModelColor = (provider: string) => {
@@ -138,6 +142,14 @@ export default function ModelPanel({ aiModels, onOpenKnowledgeBase }: ModelPanel
           <Button variant="ghost" className="w-full justify-start h-8 px-3">
             <TrendingUp className="h-4 w-4 mr-2" />
             View Analytics
+          </Button>
+          <Button 
+            variant="ghost" 
+            className="w-full justify-start h-8 px-3"
+            onClick={openEthicsReflector}
+          >
+            <Shield className="h-4 w-4 mr-2" />
+            Ethics Monitor
           </Button>
         </div>
       </div>
