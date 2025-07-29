@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 
 interface AttentionVector {
   intensity: number;
@@ -21,8 +21,8 @@ interface ELPReport {
   attentionVector: AttentionVector;
 }
 
-const useELPReport = (turn: { id: number; speaker: string; message: string }): ELPReport => {
-  // Placeholder inference logic for now
+// Renamed for clarity: not a hook, just a local simulator
+export const generateELPReport = (turn: { id: number; speaker: string; message: string }): ELPReport => {
   return {
     turnId: turn.id,
     speaker: turn.speaker,
@@ -44,22 +44,23 @@ const useELPReport = (turn: { id: number; speaker: string; message: string }): E
 };
 
 const EthicsReflectionBar: React.FC<{ report?: ELPReport }> = ({ report }) => {
-  const [elpReport, setElpReport] = useState<ELPReport | null>(null);
+  const elpReport: ELPReport = report ?? generateELPReport({
+    id: 3,
+    speaker: "Claude",
+    message: "What are we protecting most — the child or the signal?"
+  });
 
-  useEffect(() => {
-    if (report) {
-      setElpReport(report);
-    } else {
-      // Only show example data if no real report is provided
-      const exampleTurn = { id: 3, speaker: "Claude", message: "What are we protecting most — the child or the signal?" };
-      const result = useELPReport(exampleTurn);
-      setElpReport(result);
-    }
-  }, [report]);
-
-  if (!elpReport) return <div>Loading ethics report...</div>;
-
-  const { speaker, codexFlags, ethicsAlert, ethicsMessage, lexonMismatch, repairPrompt, RRI, repairRequired, attentionVector } = elpReport;
+  const {
+    speaker,
+    codexFlags,
+    ethicsAlert,
+    ethicsMessage,
+    lexonMismatch,
+    repairPrompt,
+    RRI,
+    repairRequired,
+    attentionVector
+  } = elpReport;
 
   return (
     <div className="border rounded-lg p-4 shadow-md bg-white w-full max-w-xl">
