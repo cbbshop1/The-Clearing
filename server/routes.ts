@@ -137,6 +137,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         type: 'user',
         emojiTags: emojiTags || [],
         files: files || [],
+        targetModels: targetModels || 'both',
         metadata: {},
       });
 
@@ -175,10 +176,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`🤖 CALLING MODEL: ${model.name} (${model.provider})`);
         
         // Filter conversation history for this specific model
-        // Each model only sees user messages and its own previous responses
+        // Each model only sees user messages that were sent to it and its own previous responses
         const modelConversationHistory = allMessages.filter(msg => {
           if (msg.id === userMessage.id) return false; // Exclude current message
-          if (msg.type === 'user') return true; // Include all user messages
+          
+          // For user messages, check if they were sent to this model
+          if (msg.type === 'user') {
+            const msgTargetModels = msg.targetModels || 'both';
+            if (msgTargetModels === 'both') return true; // Message was sent to all models
+            if (msgTargetModels === 'openai' && model.provider === 'openai') return true;
+            if (msgTargetModels === 'claude' && model.provider === 'anthropic') return true;
+            if (msgTargetModels === 'deepseek' && model.provider === 'deepseek') return true;
+            return false; // Message was not sent to this model
+          }
           
           // Include only this model's own responses
           if (model.provider === 'openai' && msg.type === 'ai_openai') return true;
@@ -271,7 +281,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Filter conversation history for the target model
       const modelConversationHistory = allMessages.filter(msg => {
-        if (msg.type === 'user') return true; // Include all user messages
+        // For user messages, check if they were sent to this model
+        if (msg.type === 'user') {
+          const msgTargetModels = msg.targetModels || 'both';
+          if (msgTargetModels === 'both') return true; // Message was sent to all models
+          if (msgTargetModels === 'openai' && targetProvider === 'openai') return true;
+          if (msgTargetModels === 'claude' && targetProvider === 'claude') return true;
+          if (msgTargetModels === 'deepseek' && targetProvider === 'deepseek') return true;
+          return false; // Message was not sent to this model
+        }
         
         // Include only this model's own responses
         if (targetProvider === 'openai' && msg.type === 'ai_openai') return true;

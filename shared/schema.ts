@@ -33,6 +33,7 @@ export const messages = pgTable("messages", {
   aiModel: text("ai_model"), // openai, anthropic, etc.
   emojiTags: text("emoji_tags").array().default([]),
   files: text("files").array().default([]), // file URLs
+  targetModels: text("target_models").default("both"), // Track which models this message was sent to
   metadata: jsonb("metadata").default({}),
   createdAt: timestamp("created_at").defaultNow(),
 });

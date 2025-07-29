@@ -309,7 +309,7 @@ export class DatabaseStorage implements IStorage {
       await this.createUser({
         username: "christopher_michael",
         email: "christopher@clearingcollective.com",
-        bio: "Human moderator facilitating AI conversations",
+
       });
     }
 
@@ -321,7 +321,6 @@ export class DatabaseStorage implements IStorage {
         provider: "openai",
         model: "gpt-4o",
         isActive: true,
-        systemPrompt: "",
       });
 
       await this.createAiModel({
@@ -329,7 +328,6 @@ export class DatabaseStorage implements IStorage {
         provider: "anthropic",
         model: "claude-sonnet-4-20250514",
         isActive: true,
-        systemPrompt: "",
       });
     }
 
@@ -427,6 +425,10 @@ export class DatabaseStorage implements IStorage {
         userId: messages.userId,
         type: messages.type,
         content: messages.content,
+        aiModel: messages.aiModel,
+        emojiTags: messages.emojiTags,
+        files: messages.files,
+        targetModels: messages.targetModels,
         metadata: messages.metadata,
         createdAt: messages.createdAt,
         user: users,
@@ -475,6 +477,10 @@ export class DatabaseStorage implements IStorage {
         userId: messages.userId,
         type: messages.type,
         content: messages.content,
+        aiModel: messages.aiModel,
+        emojiTags: messages.emojiTags,
+        files: messages.files,
+        targetModels: messages.targetModels,
         metadata: messages.metadata,
         createdAt: messages.createdAt,
         user: users,
@@ -489,7 +495,10 @@ export class DatabaseStorage implements IStorage {
   async createMessage(insertMessage: InsertMessage): Promise<Message> {
     const [message] = await db
       .insert(messages)
-      .values(insertMessage)
+      .values({
+        ...insertMessage,
+        targetModels: insertMessage.targetModels || 'both'
+      })
       .returning();
     return message;
   }
