@@ -168,19 +168,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get session with conversation history (exclude the current user message to avoid duplication)
       const session = await storage.getSession(sessionId);
       const allMessages = session?.messages || [];
-      const conversationHistory = allMessages.filter(msg => msg.id !== userMessage.id);
       
-      // Debug: Log the conversation history being sent to AI
-      console.log('Number of messages in conversation history:', conversationHistory.length);
-
       // Generate AI responses
       console.log('🚀 PROCESSING', filteredModels.length, 'AI MODELS...');
       for (const model of filteredModels) {
         console.log(`🤖 CALLING MODEL: ${model.name} (${model.provider})`);
+        
+        // Filter conversation history for this specific model
+        // Each model only sees user messages and its own previous responses
+        const modelConversationHistory = allMessages.filter(msg => {
+          if (msg.id === userMessage.id) return false; // Exclude current message
+          if (msg.type === 'user') return true; // Include all user messages
+          
+          // Include only this model's own responses
+          if (model.provider === 'openai' && msg.type === 'ai_openai') return true;
+          if (model.provider === 'anthropic' && msg.type === 'ai_claude') return true;
+          if (model.provider === 'deepseek' && msg.type === 'ai_deepseek') return true;
+          
+          return false; // Exclude other AI models' responses
+        });
+        
+        console.log(`📝 ${model.name}: Filtered to ${modelConversationHistory.length} messages from ${allMessages.length} total`);
+        
         try {
           const aiResponse = await aiService.generateResponse(
             enhancedContent,
-            conversationHistory,
+            modelConversationHistory,
             emojiTags || [],
             model,
             files || []
@@ -254,12 +267,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get conversation history for forwarded message
       const session = await storage.getSession(sessionId);
-      const conversationHistory = session?.messages || [];
+      const allMessages = session?.messages || [];
+      
+      // Filter conversation history for the target model
+      const modelConversationHistory = allMessages.filter(msg => {
+        if (msg.type === 'user') return true; // Include all user messages
+        
+        // Include only this model's own responses
+        if (targetProvider === 'openai' && msg.type === 'ai_openai') return true;
+        if (targetProvider === 'claude' && msg.type === 'ai_claude') return true;
+        if (targetProvider === 'deepseek' && msg.type === 'ai_deepseek') return true;
+        
+        return false; // Exclude other AI models' responses
+      });
+      
+      console.log(`📝 FORWARD to ${targetModel.name}: Filtered to ${modelConversationHistory.length} messages from ${allMessages.length} total`);
       
       // Generate AI response from target model
       const aiResponse = await aiService.generateResponse(
-        `Forwarded message: ${content}`,
-        conversationHistory,
+        content, // Remove "Forwarded message:" prefix to avoid confusion
+        modelConversationHistory,
         emojiTags,
         targetModel
       );

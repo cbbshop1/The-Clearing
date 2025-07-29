@@ -154,6 +154,9 @@ This is a full-stack web application that provides a platform for human-moderate
 - July 20, 2025: Fixed background process interference issue preventing Claude responses
 - July 20, 2025: Implemented clean restart process to resolve API configuration conflicts
 - July 20, 2025: Updated chat interface to support three-model selection (OpenAI, Claude, DeepSeek)
+- July 29, 2025: Fixed critical message routing issue - AI models now only receive their own conversation history and user messages
+- July 29, 2025: Each AI model maintains isolated conversation context, preventing cross-contamination of responses
+- July 29, 2025: Forward messages now properly filtered to maintain individual model conversation integrity
 
 ## User Preferences
 

@@ -164,7 +164,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
     if (!socket || !sessionId || !userId) return;
     
     const targetProvider = message.type === 'ai_openai' ? 'claude' : 'openai';
-    const forwardContent = `[Forwarded from ${message.type === 'ai_openai' ? 'OpenAI GPT-4o' : 'Claude'}]: ${message.content}`;
+    const forwardContent = message.content; // Send raw content, server will handle context
     
     // Mark message as forwarded
     setForwardedMessages(prev => new Set(prev).add(message.id));
