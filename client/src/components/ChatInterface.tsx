@@ -330,8 +330,8 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
             onClick={() => setSelectedTarget('both')}
             className="flex items-center space-x-1"
           >
-            <span>🤖🎭</span>
-            <span>Both</span>
+            <span>🤖🎭🧠</span>
+            <span>All</span>
           </Button>
           <Button
             variant={selectedTarget === 'openai' ? 'default' : 'outline'}
