@@ -110,12 +110,14 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
   };
 
   const handleSendMessage = async () => {
-    if ((!currentMessage.trim() && selectedFiles.length === 0) || !socket || !sessionId || !userId) return;
+    if ((!currentMessage.trim() && selectedFiles.length === 0) || !socket || !sessionId || !userId || isLoading || fileUploading) return;
 
     const emojiTags = extractEmojis(currentMessage);
     
     setIsLoading(true);
-    setFileUploading(true);
+    if (selectedFiles.length > 0) {
+      setFileUploading(true);
+    }
 
     try {
       // If files are selected, upload them first
@@ -220,7 +222,10 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleSendMessage();
+      // Prevent duplicate sends while loading or uploading
+      if (!isLoading && !fileUploading) {
+        handleSendMessage();
+      }
     }
   };
 
@@ -274,32 +279,32 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
         <div className="space-y-6">
           {console.log('All messages:', messages.map(m => ({id: m.id, type: m.type, content: m.content.substring(0, 30)})))}
           {messages.map((message, index) => {
-            // Group AI responses that follow each other
+            // Group consecutive AI responses - SIMPLIFIED LOGIC
             if (message.type === 'ai_openai' || message.type === 'ai_claude' || message.type === 'ai_deepseek') {
-              // Check if this message is the first in a group
+              // Check if this is the first AI message in a potential group
               const prevMessage = messages[index - 1];
               const isFirstInGroup = !prevMessage || 
                 !(prevMessage.type === 'ai_openai' || prevMessage.type === 'ai_claude' || prevMessage.type === 'ai_deepseek');
               
               if (isFirstInGroup) {
-                // Collect all consecutive AI messages to group them
+                // Find all AI messages that come right after this one
                 const aiGroup = [message];
-                let checkIndex = index + 1;
-                
-                // Keep collecting AI messages until we find a non-AI message or a duplicate type
-                while (checkIndex < messages.length && 
-                       (messages[checkIndex].type === 'ai_openai' || 
-                        messages[checkIndex].type === 'ai_claude' || 
-                        messages[checkIndex].type === 'ai_deepseek') &&
-                       !aiGroup.find(m => m.type === messages[checkIndex].type)) {
-                  aiGroup.push(messages[checkIndex]);
-                  checkIndex++;
+                for (let i = index + 1; i < messages.length; i++) {
+                  const nextMessage = messages[i];
+                  if (nextMessage.type === 'ai_openai' || nextMessage.type === 'ai_claude' || nextMessage.type === 'ai_deepseek') {
+                    // Only add if we don't already have this model type
+                    if (!aiGroup.some(m => m.type === nextMessage.type)) {
+                      aiGroup.push(nextMessage);
+                    }
+                  } else {
+                    break; // Stop if we hit a non-AI message
+                  }
                 }
                 
-                console.log(`AI Group found: ${aiGroup.length} messages`, aiGroup.map(m => ({type: m.type, id: m.id, content: m.content.substring(0, 50)})));
+                console.log(`🎯 AI Group: ${aiGroup.length} messages`, aiGroup.map(m => m.type));
                 
+                // Always show grouped layout if we have multiple AI messages
                 if (aiGroup.length > 1) {
-                  // Show grouped layout based on number of models
                   const gridCols = aiGroup.length === 2 ? 'grid-cols-2' : 'grid-cols-3';
                   return (
                     <div key={`group-${message.id}`} className={`grid ${gridCols} gap-4`}>
@@ -322,8 +327,8 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
                   );
                 }
               } else {
-                // Skip this message as it's already rendered in the group
-                console.log(`Skipping message ${message.id} (${message.type}) - already in group`);
+                // This AI message is part of a group, skip it
+                console.log(`⏩ Skipping ${message.type} - part of group`);
                 return null;
               }
             }
