@@ -163,7 +163,18 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
   const handleForwardMessage = (message: ChatMessage) => {
     if (!socket || !sessionId || !userId) return;
     
-    const targetProvider = message.type === 'ai_openai' ? 'claude' : 'openai';
+    // Determine target providers based on current message type
+    let targetProvider: string;
+    if (message.type === 'ai_openai') {
+      targetProvider = 'claude'; // Forward OpenAI to Claude
+    } else if (message.type === 'ai_claude') {
+      targetProvider = 'deepseek'; // Forward Claude to DeepSeek  
+    } else if (message.type === 'ai_deepseek') {
+      targetProvider = 'openai'; // Forward DeepSeek to OpenAI
+    } else {
+      targetProvider = 'both'; // Default fallback for user messages
+    }
+    
     const forwardContent = message.content; // Send raw content, server will handle context
     
     // Mark message as forwarded
@@ -243,48 +254,48 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
           {messages.map((message, index) => {
             // Group AI responses that follow each other
             if (message.type === 'ai_openai' || message.type === 'ai_claude' || message.type === 'ai_deepseek') {
-              const nextMessage = messages[index + 1];
-              const isGroupedWithNext = nextMessage && 
-                (nextMessage.type === 'ai_openai' || nextMessage.type === 'ai_claude' || nextMessage.type === 'ai_deepseek') &&
-                nextMessage.type !== message.type;
+              // Collect all consecutive AI messages to group them
+              const aiGroup = [message];
+              let checkIndex = index + 1;
               
+              while (checkIndex < messages.length && 
+                     (messages[checkIndex].type === 'ai_openai' || 
+                      messages[checkIndex].type === 'ai_claude' || 
+                      messages[checkIndex].type === 'ai_deepseek') &&
+                     !aiGroup.find(m => m.type === messages[checkIndex].type)) {
+                aiGroup.push(messages[checkIndex]);
+                checkIndex++;
+              }
+              
+              // Check if this message is the first in a group
               const prevMessage = messages[index - 1];
-              const isGroupedWithPrev = prevMessage && 
-                (prevMessage.type === 'ai_openai' || prevMessage.type === 'ai_claude' || prevMessage.type === 'ai_deepseek') &&
-                prevMessage.type !== message.type;
-                
-              if (isGroupedWithNext) {
-                // Show side-by-side layout with independent scroll areas
+              const isFirstInGroup = !prevMessage || 
+                !(prevMessage.type === 'ai_openai' || prevMessage.type === 'ai_claude' || prevMessage.type === 'ai_deepseek');
+              
+              if (isFirstInGroup && aiGroup.length > 1) {
+                // Show grouped layout based on number of models
+                const gridCols = aiGroup.length === 2 ? 'grid-cols-2' : 'grid-cols-3';
                 return (
-                  <div key={`${message.id}-${nextMessage.id}`} className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <div className="text-xs font-medium text-muted-foreground mb-2 sticky top-0 bg-background z-10 pb-1 border-b">
-                        {message.type === 'ai_openai' ? '🤖 OpenAI GPT-4o' : message.type === 'ai_claude' ? '🎭 Claude' : '🧠 DeepSeek'}
+                  <div key={`group-${message.id}`} className={`grid ${gridCols} gap-4`}>
+                    {aiGroup.map((aiMessage) => (
+                      <div key={aiMessage.id} className="space-y-2">
+                        <div className="text-xs font-medium text-muted-foreground mb-2 sticky top-0 bg-background z-10 pb-1 border-b">
+                          {aiMessage.type === 'ai_openai' ? '🤖 OpenAI GPT-4o' : 
+                           aiMessage.type === 'ai_claude' ? '🎭 Claude' : '🧠 DeepSeek'}
+                        </div>
+                        <div className="max-h-80 overflow-y-auto pr-2 space-y-2 animate-in slide-in-from-bottom-3 duration-500">
+                          <MessageBubble 
+                            message={aiMessage} 
+                            onForward={handleForwardMessage} 
+                            isForwarded={forwardedMessages.has(aiMessage.id)}
+                          />
+                        </div>
                       </div>
-                      <div className="max-h-80 overflow-y-auto pr-2 space-y-2 animate-in slide-in-from-left-3 duration-500">
-                        <MessageBubble 
-                          message={message} 
-                          onForward={handleForwardMessage} 
-                          isForwarded={forwardedMessages.has(message.id)}
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="text-xs font-medium text-muted-foreground mb-2 sticky top-0 bg-background z-10 pb-1 border-b">
-                        {nextMessage.type === 'ai_openai' ? '🤖 OpenAI GPT-4o' : nextMessage.type === 'ai_claude' ? '🎭 Claude' : '🧠 DeepSeek'}
-                      </div>
-                      <div className="max-h-80 overflow-y-auto pr-2 space-y-2 animate-in slide-in-from-right-3 duration-500">
-                        <MessageBubble 
-                          message={nextMessage} 
-                          onForward={handleForwardMessage} 
-                          isForwarded={forwardedMessages.has(nextMessage.id)}
-                        />
-                      </div>
-                    </div>
+                    ))}
                   </div>
                 );
-              } else if (isGroupedWithPrev) {
-                // Skip this message as it's already rendered in the previous group
+              } else if (!isFirstInGroup) {
+                // Skip this message as it's already rendered in the group
                 return null;
               }
             }

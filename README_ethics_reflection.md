@@ -148,11 +148,3 @@ Add new attention vector dimensions or detection patterns as needed for specific
 - Real-time intervention suggestions
 - Cross-session ethics trend analysis
 
-## Getting Started
-
-1. Ethics reports are automatically generated for all new messages
-2. Access the Ethics Monitor via the button in the Model Panel
-3. Query session ethics via `/api/sessions/:id/ethics`
-4. Use the data for research analysis and conversation improvement
-
-The system is now fully operational and ready for comprehensive ethics research within The Clearing Collective platform.

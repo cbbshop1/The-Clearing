@@ -40,6 +40,8 @@ export default function ModelPanel({ aiModels, onOpenKnowledgeBase, currentSessi
         return 'bg-green-50 border-green-200';
       case 'anthropic':
         return 'bg-blue-50 border-blue-200';
+      case 'deepseek':
+        return 'bg-purple-50 border-purple-200';
       default:
         return 'bg-muted border-border';
     }
@@ -50,7 +52,7 @@ export default function ModelPanel({ aiModels, onOpenKnowledgeBase, currentSessi
   };
 
   return (
-    <div className="w-64 bg-card border-l border-border flex flex-col">
+    <div className="w-48 bg-card border-l border-border flex flex-col">
       {/* Model Panel Header */}
       <div className="p-4 border-b border-border">
         <div className="flex items-center justify-between mb-2">
