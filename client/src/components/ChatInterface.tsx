@@ -275,47 +275,52 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
           {messages.map((message, index) => {
             // Group AI responses that follow each other
             if (message.type === 'ai_openai' || message.type === 'ai_claude' || message.type === 'ai_deepseek') {
-              // Collect all consecutive AI messages to group them
-              const aiGroup = [message];
-              let checkIndex = index + 1;
-              
-              while (checkIndex < messages.length && 
-                     (messages[checkIndex].type === 'ai_openai' || 
-                      messages[checkIndex].type === 'ai_claude' || 
-                      messages[checkIndex].type === 'ai_deepseek') &&
-                     !aiGroup.find(m => m.type === messages[checkIndex].type)) {
-                aiGroup.push(messages[checkIndex]);
-                checkIndex++;
-              }
-              
               // Check if this message is the first in a group
               const prevMessage = messages[index - 1];
               const isFirstInGroup = !prevMessage || 
                 !(prevMessage.type === 'ai_openai' || prevMessage.type === 'ai_claude' || prevMessage.type === 'ai_deepseek');
               
-              if (isFirstInGroup && aiGroup.length > 1) {
-                // Show grouped layout based on number of models
-                const gridCols = aiGroup.length === 2 ? 'grid-cols-2' : 'grid-cols-3';
-                return (
-                  <div key={`group-${message.id}`} className={`grid ${gridCols} gap-4`}>
-                    {aiGroup.map((aiMessage) => (
-                      <div key={aiMessage.id} className="space-y-2">
-                        <div className="text-xs font-medium text-muted-foreground mb-2 sticky top-0 bg-background z-10 pb-1 border-b">
-                          {aiMessage.type === 'ai_openai' ? '🤖 OpenAI GPT-4o' : 
-                           aiMessage.type === 'ai_claude' ? '🎭 Claude' : '🧠 DeepSeek'}
+              if (isFirstInGroup) {
+                // Collect all consecutive AI messages to group them
+                const aiGroup = [message];
+                let checkIndex = index + 1;
+                
+                // Keep collecting AI messages until we find a non-AI message or a duplicate type
+                while (checkIndex < messages.length && 
+                       (messages[checkIndex].type === 'ai_openai' || 
+                        messages[checkIndex].type === 'ai_claude' || 
+                        messages[checkIndex].type === 'ai_deepseek') &&
+                       !aiGroup.find(m => m.type === messages[checkIndex].type)) {
+                  aiGroup.push(messages[checkIndex]);
+                  checkIndex++;
+                }
+                
+                console.log(`AI Group found: ${aiGroup.length} messages`, aiGroup.map(m => m.type));
+                
+                if (aiGroup.length > 1) {
+                  // Show grouped layout based on number of models
+                  const gridCols = aiGroup.length === 2 ? 'grid-cols-2' : 'grid-cols-3';
+                  return (
+                    <div key={`group-${message.id}`} className={`grid ${gridCols} gap-4`}>
+                      {aiGroup.map((aiMessage) => (
+                        <div key={aiMessage.id} className="space-y-2">
+                          <div className="text-xs font-medium text-muted-foreground mb-2 sticky top-0 bg-background z-10 pb-1 border-b">
+                            {aiMessage.type === 'ai_openai' ? '🤖 OpenAI GPT-4o' : 
+                             aiMessage.type === 'ai_claude' ? '🎭 Claude' : '🧠 DeepSeek'}
+                          </div>
+                          <div className="max-h-80 overflow-y-auto pr-2 space-y-2 animate-in slide-in-from-bottom-3 duration-500">
+                            <MessageBubble 
+                              message={aiMessage} 
+                              onForward={handleForwardMessage} 
+                              isForwarded={forwardedMessages.has(aiMessage.id)}
+                            />
+                          </div>
                         </div>
-                        <div className="max-h-80 overflow-y-auto pr-2 space-y-2 animate-in slide-in-from-bottom-3 duration-500">
-                          <MessageBubble 
-                            message={aiMessage} 
-                            onForward={handleForwardMessage} 
-                            isForwarded={forwardedMessages.has(aiMessage.id)}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                );
-              } else if (!isFirstInGroup) {
+                      ))}
+                    </div>
+                  );
+                }
+              } else {
                 // Skip this message as it's already rendered in the group
                 return null;
               }
