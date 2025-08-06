@@ -272,6 +272,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
       {/* Chat Messages */}
       <div className="flex-1 p-4 overflow-y-auto" ref={scrollViewportRef}>
         <div className="space-y-6">
+          {console.log('All messages:', messages.map(m => ({id: m.id, type: m.type, content: m.content.substring(0, 30)})))}
           {messages.map((message, index) => {
             // Group AI responses that follow each other
             if (message.type === 'ai_openai' || message.type === 'ai_claude' || message.type === 'ai_deepseek') {
@@ -295,7 +296,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
                   checkIndex++;
                 }
                 
-                console.log(`AI Group found: ${aiGroup.length} messages`, aiGroup.map(m => m.type));
+                console.log(`AI Group found: ${aiGroup.length} messages`, aiGroup.map(m => ({type: m.type, id: m.id, content: m.content.substring(0, 50)})));
                 
                 if (aiGroup.length > 1) {
                   // Show grouped layout based on number of models
@@ -322,6 +323,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
                 }
               } else {
                 // Skip this message as it's already rendered in the group
+                console.log(`Skipping message ${message.id} (${message.type}) - already in group`);
                 return null;
               }
             }
