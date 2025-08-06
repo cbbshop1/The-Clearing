@@ -3,10 +3,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { User, Brain, Lightbulb, Forward, Download, FileText, Image } from "lucide-react";
 import { ChatMessage } from "@shared/schema";
+import ForwardDialog from "./ForwardDialog";
 
 interface MessageBubbleProps {
   message: ChatMessage;
-  onForward?: (message: ChatMessage) => void;
+  onForward?: (message: ChatMessage, targets?: string[]) => void;
   isForwarded?: boolean;
 }
 
@@ -162,19 +163,14 @@ export default function MessageBubble({ message, onForward, isForwarded = false 
             </div>
           )}
           
-          {/* Forward button for AI responses */}
-          {(message.type === 'ai_openai' || message.type === 'ai_claude') && onForward && (
+          {/* Forward dialog for AI responses and user messages */}
+          {(message.type === 'ai_openai' || message.type === 'ai_claude' || message.type === 'ai_deepseek' || message.type === 'user') && onForward && (
             <div className="flex justify-end mt-2">
-              <Button
-                variant={isForwarded ? "default" : "ghost"}
-                size="sm"
-                onClick={() => onForward(message)}
-                className={`text-xs h-6 px-2 ${isForwarded ? 'bg-green-600 hover:bg-green-700 text-white' : ''}`}
-                disabled={isForwarded}
-              >
-                <Forward className="h-3 w-3 mr-1" />
-                {isForwarded ? 'Forwarded' : `Forward to ${message.type === 'ai_openai' ? 'Claude' : 'GPT-4o'}`}
-              </Button>
+              <ForwardDialog 
+                message={message}
+                onForward={onForward}
+                isForwarded={isForwarded}
+              />
             </div>
           )}
           

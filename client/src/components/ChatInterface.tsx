@@ -160,10 +160,31 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
     }
   };
 
-  const handleForwardMessage = (message: ChatMessage) => {
+  const handleForwardMessage = (message: ChatMessage, targets?: string[]) => {
     if (!socket || !sessionId || !userId) return;
     
-    // Determine target providers based on current message type
+    // If specific targets are provided, send to each target
+    if (targets && targets.length > 0) {
+      targets.forEach(target => {
+        const forwardContent = message.content;
+        
+        setIsLoading(true);
+        socket.send(JSON.stringify({
+          type: 'forward_message',
+          sessionId,
+          userId,
+          content: forwardContent,
+          targetProvider: target,
+          originalMessage: message,
+        }));
+      });
+      
+      // Mark message as forwarded
+      setForwardedMessages(prev => new Set(prev).add(message.id));
+      return;
+    }
+    
+    // Legacy fallback - determine target providers based on current message type
     let targetProvider: string;
     if (message.type === 'ai_openai') {
       targetProvider = 'claude'; // Forward OpenAI to Claude
@@ -175,7 +196,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
       targetProvider = 'both'; // Default fallback for user messages
     }
     
-    const forwardContent = message.content; // Send raw content, server will handle context
+    const forwardContent = message.content;
     
     // Mark message as forwarded
     setForwardedMessages(prev => new Set(prev).add(message.id));
