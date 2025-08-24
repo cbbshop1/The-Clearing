@@ -4,13 +4,11 @@ import ChatInterface from "@/components/ChatInterface";
 import Sidebar from "@/components/Sidebar";
 import ModelPanel from "@/components/ModelPanel";
 import EmojiLexicon from "@/components/EmojiLexicon";
-import KnowledgeBase from "@/components/KnowledgeBase";
 import { Session, AiModel } from "@shared/schema";
 
 export default function Home() {
   const [selectedSessionId, setSelectedSessionId] = useState<number | null>(null);
   const [isEmojiLexiconOpen, setIsEmojiLexiconOpen] = useState(false);
-  const [isKnowledgeBaseOpen, setIsKnowledgeBaseOpen] = useState(false);
   const chatInterfaceRef = useRef<{ handleEmojiSelect: (emoji: string) => void } | null>(null);
   
   // Get moderator user
@@ -114,9 +112,7 @@ export default function Home() {
         />
         
         <ModelPanel 
-          aiModels={aiModels} 
-          onOpenKnowledgeBase={() => setIsKnowledgeBaseOpen(true)}
-          currentSessionId={selectedSessionId || undefined}
+          aiModels={aiModels}
         />
       </div>
       
@@ -129,11 +125,6 @@ export default function Home() {
         }}
       />
       
-      <KnowledgeBase
-        isOpen={isKnowledgeBaseOpen}
-        onClose={() => setIsKnowledgeBaseOpen(false)}
-        aiModels={aiModels}
-      />
     </>
   );
 }

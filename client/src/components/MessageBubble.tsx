@@ -3,7 +3,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { User, Brain, Lightbulb, Forward, Download, FileText, Image } from "lucide-react";
 import { ChatMessage } from "@shared/schema";
-import ForwardDialog from "./ForwardDialog";
 
 interface MessageBubbleProps {
   message: ChatMessage;
@@ -163,14 +162,26 @@ export default function MessageBubble({ message, onForward, isForwarded = false 
             </div>
           )}
           
-          {/* Forward dialog for AI responses and user messages */}
-          {(message.type === 'ai_openai' || message.type === 'ai_claude' || message.type === 'ai_deepseek' || message.type === 'user') && onForward && (
+          {/* Simple forward button for AI responses only */}
+          {(message.type === 'ai_openai' || message.type === 'ai_claude' || message.type === 'ai_deepseek') && onForward && (
             <div className="flex justify-end mt-2">
-              <ForwardDialog 
-                message={message}
-                onForward={onForward}
-                isForwarded={isForwarded}
-              />
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className={`flex items-center space-x-1 ${isForwarded ? 'text-green-600' : ''}`}
+                disabled={isForwarded}
+                onClick={() => {
+                  // Auto-forward to both other AI models
+                  const targets = [];
+                  if (message.type !== 'ai_openai') targets.push('openai');
+                  if (message.type !== 'ai_claude') targets.push('claude');
+                  if (message.type !== 'ai_deepseek') targets.push('deepseek');
+                  onForward(message, targets);
+                }}
+              >
+                <Forward className="h-3 w-3" />
+                <span>{isForwarded ? 'Forwarded to others' : 'Forward to others'}</span>
+              </Button>
             </div>
           )}
           
