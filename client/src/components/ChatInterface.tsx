@@ -59,6 +59,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
 
   const { socket, isConnected } = useWebSocket({
     onMessage: (data) => {
+      console.log('📨 WEBSOCKET MESSAGE:', data.type);
       switch (data.type) {
         case 'session_history':
           setMessages(data.messages);
@@ -68,6 +69,9 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
           break;
         case 'ai_error':
           console.error('AI Error:', data.error);
+          break;
+        case 'forward_complete':
+          console.log('✅ Forward completed');
           break;
       }
       setIsLoading(false);
@@ -158,6 +162,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
     } catch (error) {
       console.error('Error sending message with files:', error);
     } finally {
+      setIsLoading(false);
       setFileUploading(false);
     }
   };
@@ -170,7 +175,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
       targets.forEach(target => {
         const forwardContent = message.content;
         
-        setIsLoading(true);
+        console.log(`📤 FORWARDING to ${target}:`, { content: forwardContent.substring(0, 50) });
         socket.send(JSON.stringify({
           type: 'forward_message',
           sessionId,
@@ -203,7 +208,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
     // Mark message as forwarded
     setForwardedMessages(prev => new Set(prev).add(message.id));
     
-    setIsLoading(true);
+    console.log(`📤 FORWARDING (legacy) to ${targetProvider}:`, { content: forwardContent.substring(0, 50) });
     socket.send(JSON.stringify({
       type: 'forward_message',
       sessionId,
