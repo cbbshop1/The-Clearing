@@ -165,6 +165,18 @@ export default function MessageBubble({ message, onForward, isForwarded = false 
           {/* Individual forward buttons for each companion AI */}
           {(message.type === 'ai_openai' || message.type === 'ai_claude' || message.type === 'ai_deepseek') && onForward && (
             <div className="flex justify-end mt-2 space-x-2">
+              {/* DEBUG: Test button to verify onClick works */}
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex items-center space-x-1 text-xs bg-red-100"
+                onClick={() => {
+                  console.log('🟠 TEST BUTTON CLICKED - onClick is working!');
+                  alert('Test button clicked!');
+                }}
+              >
+                TEST
+              </Button>
               {/* Forward buttons based on message type */}
               {message.type === 'ai_openai' && (
                 <>
@@ -172,7 +184,10 @@ export default function MessageBubble({ message, onForward, isForwarded = false 
                     variant="ghost" 
                     size="sm" 
                     className="flex items-center space-x-1 text-xs"
-                    onClick={() => onForward(message, ['claude'])}
+                    onClick={() => {
+                      console.log('🔴 FORWARD BUTTON CLICKED: OpenAI → Claude');
+                      onForward(message, ['claude']);
+                    }}
                   >
                     <Forward className="h-3 w-3" />
                     <span>→ Claude</span>
