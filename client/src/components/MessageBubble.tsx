@@ -172,16 +172,7 @@ export default function MessageBubble({ message, onForward, isForwarded = false 
                     variant="ghost" 
                     size="sm" 
                     className="flex items-center space-x-1 text-xs"
-                    onClick={() => {
-                      console.log('🔴 FORWARD BUTTON CLICKED: OpenAI → Claude');
-                      console.log('🔴 onForward function:', typeof onForward, onForward);
-                      console.log('🔴 message:', message.id, message.type);
-                      if (onForward) {
-                        onForward(message, ['claude']);
-                      } else {
-                        console.log('❌ onForward is not defined!');
-                      }
-                    }}
+                    onClick={() => onForward(message, ['claude'])}
                   >
                     <Forward className="h-3 w-3" />
                     <span>→ Claude</span>
