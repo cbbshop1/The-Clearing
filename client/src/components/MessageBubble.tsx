@@ -162,26 +162,76 @@ export default function MessageBubble({ message, onForward, isForwarded = false 
             </div>
           )}
           
-          {/* Simple forward button for AI responses only */}
+          {/* Individual forward buttons for each companion AI */}
           {(message.type === 'ai_openai' || message.type === 'ai_claude' || message.type === 'ai_deepseek') && onForward && (
-            <div className="flex justify-end mt-2">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className={`flex items-center space-x-1 ${isForwarded ? 'text-green-600' : ''}`}
-                disabled={isForwarded}
-                onClick={() => {
-                  // Auto-forward to both other AI models
-                  const targets = [];
-                  if (message.type !== 'ai_openai') targets.push('openai');
-                  if (message.type !== 'ai_claude') targets.push('claude');
-                  if (message.type !== 'ai_deepseek') targets.push('deepseek');
-                  onForward(message, targets);
-                }}
-              >
-                <Forward className="h-3 w-3" />
-                <span>{isForwarded ? 'Forwarded to others' : 'Forward to others'}</span>
-              </Button>
+            <div className="flex justify-end mt-2 space-x-2">
+              {/* Forward buttons based on message type */}
+              {message.type === 'ai_openai' && (
+                <>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="flex items-center space-x-1 text-xs"
+                    onClick={() => onForward(message, ['claude'])}
+                  >
+                    <Forward className="h-3 w-3" />
+                    <span>→ Claude</span>
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="flex items-center space-x-1 text-xs"
+                    onClick={() => onForward(message, ['deepseek'])}
+                  >
+                    <Forward className="h-3 w-3" />
+                    <span>→ DeepSeek</span>
+                  </Button>
+                </>
+              )}
+              {message.type === 'ai_claude' && (
+                <>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="flex items-center space-x-1 text-xs"
+                    onClick={() => onForward(message, ['openai'])}
+                  >
+                    <Forward className="h-3 w-3" />
+                    <span>→ OpenAI</span>
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="flex items-center space-x-1 text-xs"
+                    onClick={() => onForward(message, ['deepseek'])}
+                  >
+                    <Forward className="h-3 w-3" />
+                    <span>→ DeepSeek</span>
+                  </Button>
+                </>
+              )}
+              {message.type === 'ai_deepseek' && (
+                <>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="flex items-center space-x-1 text-xs"
+                    onClick={() => onForward(message, ['openai'])}
+                  >
+                    <Forward className="h-3 w-3" />
+                    <span>→ OpenAI</span>
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="flex items-center space-x-1 text-xs"
+                    onClick={() => onForward(message, ['claude'])}
+                  >
+                    <Forward className="h-3 w-3" />
+                    <span>→ Claude</span>
+                  </Button>
+                </>
+              )}
             </div>
           )}
           
