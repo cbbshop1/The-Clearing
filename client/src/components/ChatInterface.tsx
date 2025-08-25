@@ -59,13 +59,19 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
 
   const { socket, isConnected } = useWebSocket({
     onMessage: (data) => {
-      console.log('📨 WEBSOCKET MESSAGE:', data.type);
+      console.log('📨 WEBSOCKET MESSAGE:', data.type, data);
       switch (data.type) {
         case 'session_history':
+          console.log('📜 Setting messages from history:', data.messages.length);
           setMessages(data.messages);
           break;
         case 'new_message':
-          setMessages(prev => [...prev, data.message]);
+          console.log('✨ NEW MESSAGE RECEIVED:', data.message.type, data.message.content.substring(0, 50));
+          setMessages(prev => {
+            const newMessages = [...prev, data.message];
+            console.log('📝 Updated message count:', newMessages.length);
+            return newMessages;
+          });
           break;
         case 'ai_error':
           console.error('AI Error:', data.error);
@@ -73,6 +79,8 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
         case 'forward_complete':
           console.log('✅ Forward completed');
           break;
+        default:
+          console.log('⚠️ Unknown message type:', data.type);
       }
       setIsLoading(false);
     },
