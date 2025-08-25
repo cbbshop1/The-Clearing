@@ -315,7 +315,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
                 
                 console.log(`🎯 AI Group: ${aiGroup.length} messages`, aiGroup.map(m => m.type));
                 
-                // Always show grouped layout if we have multiple AI messages
+                // Show grouped layout if we have multiple AI messages, otherwise show single message
                 if (aiGroup.length > 1) {
                   const gridCols = aiGroup.length === 2 ? 'grid-cols-2' : 'grid-cols-3';
                   return (
@@ -337,9 +337,19 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
                       ))}
                     </div>
                   );
+                } else {
+                  // Single AI message - show it normally
+                  return (
+                    <MessageBubble 
+                      key={message.id} 
+                      message={message} 
+                      onForward={handleForwardMessage} 
+                      isForwarded={forwardedMessages.has(message.id)}
+                    />
+                  );
                 }
               } else {
-                // This AI message is part of a group, skip it
+                // This AI message is part of a group, skip it (it was already rendered in the group above)
                 console.log(`⏩ Skipping ${message.type} - part of group`);
                 return null;
               }
