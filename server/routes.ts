@@ -321,6 +321,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`📝 FORWARD to ${targetModel.name}: Filtered to ${modelConversationHistory.length} messages from ${allMessages.length} total`);
       
+      console.log(`🚀 Calling aiService.generateResponse for ${targetModel.name}...`);
       // Generate AI response from target model
       const aiResponse = await aiService.generateResponse(
         content, // Remove "Forwarded message:" prefix to avoid confusion
@@ -328,6 +329,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         emojiTags,
         targetModel
       );
+      console.log(`✅ Received response from ${targetModel.name}: ${aiResponse.content.length} characters`);
 
       // Generate ELP report for forwarded AI message
       const forwardELPReport = generateELPReport({

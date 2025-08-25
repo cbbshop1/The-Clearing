@@ -45,6 +45,13 @@ if (!process.env.DEEPSEEK_API_KEY) {
   console.log("✅ DEEPSEEK_API_KEY configured");
 }
 
+// Test OpenAI configuration on startup
+if (!process.env.OPENAI_API_KEY && !process.env.OPENAI_API_KEY_ENV_VAR) {
+  console.error("❌ OPENAI_API_KEY not found in environment variables");
+} else {
+  console.log("✅ OPENAI_API_KEY configured");
+}
+
 export interface AIResponse {
   content: string;
   model: string;
