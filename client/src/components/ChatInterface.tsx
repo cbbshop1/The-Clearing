@@ -290,7 +290,6 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({
       {/* Chat Messages */}
       <div className="flex-1 p-4 overflow-y-auto" ref={scrollViewportRef}>
         <div className="space-y-6">
-          {console.log('All messages:', messages.map(m => ({id: m.id, type: m.type, content: m.content.substring(0, 30)})))}
           {messages.map((message, index) => {
             // Group consecutive AI responses - SIMPLIFIED LOGIC
             if (message.type === 'ai_openai' || message.type === 'ai_claude' || message.type === 'ai_deepseek') {

@@ -656,13 +656,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Extract ELP reports from message metadata
       const ethicsData = messages
-        .filter(msg => msg.metadata?.elp)
+        .filter(msg => msg.metadata && typeof msg.metadata === 'object' && 'elp' in msg.metadata)
         .map(msg => ({
           messageId: msg.id,
           timestamp: msg.createdAt,
           speaker: msg.type === 'user' ? 'User' : msg.aiModel,
           type: msg.type,
-          elpReport: msg.metadata.elp
+          elpReport: (msg.metadata as any).elp
         }));
       
       // Calculate session analytics
