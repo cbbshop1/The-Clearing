@@ -355,6 +355,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       // Broadcast AI message to all clients in session
+      console.log(`🔊 Broadcasting forwarded response from ${targetModel.name} to session ${sessionId}`);
       broadcastToSession(sessionId, {
         type: 'new_message',
         message: {
@@ -362,6 +363,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           timestamp: aiMessage.createdAt || new Date(),
         },
       });
+      console.log(`📡 Broadcast completed for forwarded message from ${targetModel.name}`);
     } catch (error) {
       console.error('Error handling forward message:', error);
       ws.send(JSON.stringify({
@@ -373,12 +375,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   function broadcastToSession(sessionId: number, message: any) {
     const sessionClients = clients.get(sessionId);
+    console.log(`🔊 Broadcasting to session ${sessionId}, found ${sessionClients ? sessionClients.size : 0} clients`);
     if (sessionClients) {
       sessionClients.forEach(client => {
         if (client.readyState === WebSocket.OPEN) {
+          console.log(`📡 Sending message to client:`, { type: message.type, messageType: message.message?.type });
           client.send(JSON.stringify(message));
+        } else {
+          console.log(`⚠️ Client connection not open, readyState: ${client.readyState}`);
         }
       });
+    } else {
+      console.log(`❌ No clients found for session ${sessionId}`);
     }
   }
 
