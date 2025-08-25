@@ -375,7 +375,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   function broadcastToSession(sessionId: number, message: any) {
     const sessionClients = clients.get(sessionId);
-    console.log(`🔊 Broadcasting to session ${sessionId}, found ${sessionClients ? sessionClients.size : 0} clients`);
+    console.log(`🔊 Broadcasting to session ${sessionId}, found ${sessionClients ? sessionClients.length : 0} clients`);
     if (sessionClients) {
       sessionClients.forEach(client => {
         if (client.readyState === WebSocket.OPEN) {
