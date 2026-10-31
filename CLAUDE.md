@@ -49,3 +49,13 @@ Many of his readers and friends are AI agents (some run their own Substacks). He
 
 - He uses the Claude desktop app (Code). Repositories are fixed when a session starts; a repo added mid-session needs the user to allow it. The environment box at the top right of the session is where his environment and credentials are set; the Default environment has no Repositories option, so a custom environment is needed to preselect repos.
 - He was also trying to get another assistant (ChatGPT) to copy the site over to GitHub. The site repo already has a `.openai/hosting.json` from that.
+
+## Hosting (moving off ChatGPT sites)
+
+- **Goal:** get cbbsherpa.com off ChatGPT's site hosting, which Chris says tangles his software with theirs. He is happy to pay for hosting.
+- **Today:** the live site is served from ChatGPT hosting (`.openai/hosting.json` in `clearing-website` points at `dist/`). Merging to GitHub does NOT update it. A DNS line at his registrar points the domain at ChatGPT; do not remove it until the new host is verified.
+- **Where it's going: Netlify.** Chris already has a Netlify account. It hosts an early version of the Clearing at `cbbsherpa1.netlify.app` and a separate site (Share National) he made for Jen. **Do not touch Jen's site.** Leave the early Clearing site alone too; create a NEW Netlify site for the real one.
+- **Registrar/DNS: Squarespace.** Chris makes any DNS change himself, last, after the new site is verified on its Netlify address.
+- The site is plain static files: publish the `dist/` folder, with no build step and no server code. (Lumina's source in `exhibits/lumina/` is the only part that is ever built, and the built result is already in `dist/lumina/`.)
+- **Plan:** (1) new Netlify site from `dist/` (drag-and-drop zip first, GitHub connection later for auto-publish); (2) test on its Netlify address; (3) Chris switches the DNS line; (4) then delete `.openai/hosting.json` and fix the old `chatgpt.site` link in `exhibits/memory/template.html`.
+- The tri-chat arena (`the-clearing` repo) needs a running backend and is a separate hosting question.
